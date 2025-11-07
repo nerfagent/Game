@@ -38,10 +38,13 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        ApplyGravity();
+
         // 若玩家被動作鎖定（滑步、施法等），僅套用重力不處理輸入
         if (playerState.IsActionLocked)
         {
-            ApplyGravity(); 
+            moveDirection.x = 0f;
+            moveDirection.z = 0f;
             controller.Move(moveDirection * Time.deltaTime);
             return;
         }

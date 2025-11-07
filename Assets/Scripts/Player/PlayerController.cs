@@ -1,4 +1,4 @@
-// Assets/Scripts/Player/PlayerController.cs
+// PlayerController.cs
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -6,29 +6,33 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerCombat playerCombat;
     [SerializeField] private PlayerState playerState;
+    [SerializeField] private SkillSystem skillSystem;
 
     void Start()
     {
         playerMovement = GetComponent<PlayerMovement>();
         playerCombat = GetComponent<PlayerCombat>();
         playerState = GetComponent<PlayerState>();
+        skillSystem = GetComponent<SkillSystem>();
 
-        if (playerMovement == null || playerCombat == null || playerState == null)
+        if (playerMovement == null || playerCombat == null || playerState == null || skillSystem == null)
         {
             Debug.LogError("PlayerController missing required components.");
             enabled = false;
             return;
         }
 
-        // Subscribe to events for any high-level player coordination
+        // Subscribe to game events
         EventManager.StartListening("OnGameOver", OnGameOver);
         EventManager.StartListening("OnGamePaused", OnGamePaused);
+        EventManager.StartListening("OnGameResumed", OnGameResumed);
     }
 
     void OnDestroy()
     {
         EventManager.StopListening("OnGameOver", OnGameOver);
         EventManager.StopListening("OnGamePaused", OnGamePaused);
+        EventManager.StopListening("OnGameResumed", OnGameResumed);
     }
 
     private void OnGameOver()
@@ -39,8 +43,15 @@ public class PlayerController : MonoBehaviour
 
     private void OnGamePaused()
     {
-        // Disable all player systems when paused
         playerMovement.enabled = false;
         playerCombat.enabled = false;
+        skillSystem.enabled = false;
+    }
+
+    private void OnGameResumed()
+    {
+        playerMovement.enabled = true;
+        playerCombat.enabled = true;
+        skillSystem.enabled = true;
     }
 }
