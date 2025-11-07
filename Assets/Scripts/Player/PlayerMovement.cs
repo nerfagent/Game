@@ -8,10 +8,6 @@ public class PlayerMovement : MonoBehaviour
     public float gravity = 160f;            // 重力加速度
     public float rotationSpeed = 10f;       // 玩家旋轉速度
 
-    [Header("Ledge Detection")]
-    public float ledgeDetectHeight = 10f;   // 檢測邊緣掉落的高度
-    public float ledgeDetectDistance = 0.05f; // 向前檢測邊緣的距離
-
     [Header("Component References")]
     private CharacterController controller;  // 控制角色移動的組件
     private PlayerState playerState;         // 玩家狀態控制元件
@@ -38,6 +34,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        // 套用重力效果
         ApplyGravity();
 
         // 若玩家被動作鎖定（滑步、施法等），僅套用重力不處理輸入
@@ -91,33 +88,10 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        // 邊緣偵測邏輯，防止玩家走出平台
-        bool canMove = true;
-        if (desiredHorizontalMovement.magnitude > 0.1f)
-        {
-            Vector3 raycastOrigin = transform.position + (desiredHorizontalMovement.normalized * ledgeDetectDistance) + (Vector3.up * 0.5f);
-            Debug.DrawRay(raycastOrigin, Vector3.down * ledgeDetectHeight, Color.red);
-
-            // 若射線未擊中地面，代表前方是懸崖，禁止往前
-            if (!Physics.Raycast(raycastOrigin, Vector3.down, ledgeDetectHeight))
-            {
-                canMove = false;
-            }
-        }
-
         // 套用垂直方向（重力）
         float verticalVelocity = moveDirection.y;
         moveDirection = new Vector3(desiredHorizontalMovement.x, verticalVelocity, desiredHorizontalMovement.z);
 
-        // 套用重力效果
-        ApplyGravity();
-
-        // 若前方是懸崖，停止水平移動
-        if (!canMove)
-        {
-            moveDirection.x = 0f;
-            moveDirection.z = 0f;
-        }
 
         // 最終移動指令
         controller.Move(moveDirection * Time.deltaTime);

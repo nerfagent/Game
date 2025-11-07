@@ -16,6 +16,7 @@ Assets/
 │   │   ├── PlayerMovement.cs
 │   │   ├── PlayerCombat.cs
 │   │   ├── PlayerState.cs
+│   │   ├── PlayerTeleport.cs (會在之後成為一個skill)
 │   ├── Skills/
 │   │   ├── BaseSkill.cs
 │   │   ├── Skill1.cs
