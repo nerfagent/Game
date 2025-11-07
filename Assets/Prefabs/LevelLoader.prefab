@@ -187,7 +187,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5099857922786391807}
   - component: {fileID: 3723996099792682766}
-  - component: {fileID: 5406241114791116504}
   m_Layer: 0
   m_Name: LevelLoader
   m_TagString: Untagged
@@ -232,17 +231,3 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &5406241114791116504
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3978375517991322185}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a30f849ccc8d3c5408cb14355fb773f6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  transition: {fileID: 3723996099792682766}
-  transitionTime: 1

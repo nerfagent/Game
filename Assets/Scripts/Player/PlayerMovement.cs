@@ -1,178 +1,140 @@
-//PlayerMovement.cs
+// PlayerMovement.cs
 using UnityEngine;
-
 
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [Tooltip("The speed at which the player moves horizontally.")]
-    public float moveSpeed = 30f;
-    [Tooltip("The rate at which gravity pulls the player down.")]
-    public float gravity = 160f;
-    [Tooltip("The speed at which the player rotates to face the movement direction.")]
-    public float rotationSpeed = 10f; // NEW: Rotation speed setting
+    public float moveSpeed = 30f;           // 玩家移動速度
+    public float gravity = 160f;            // 重力加速度
+    public float rotationSpeed = 10f;       // 玩家旋轉速度
 
     [Header("Ledge Detection")]
-    public float ledgeDetectHeight = 10f;
-    public float ledgeDetectDistance = 0.05f;
-
+    public float ledgeDetectHeight = 10f;   // 檢測邊緣掉落的高度
+    public float ledgeDetectDistance = 0.05f; // 向前檢測邊緣的距離
 
     [Header("Component References")]
-    // Reference to the CharacterController component
-    private CharacterController controller;
-    // Reference to the PlayerCombat script to check if dashing or locked on
-    private PlayerCombat playerCombat;
-    // Reference to the main camera's transform
-    private Transform cameraTransform; 
+    private CharacterController controller;  // 控制角色移動的組件
+    private PlayerState playerState;         // 玩家狀態控制元件
+    private PlayerCombat playerCombat;       // 玩家戰鬥功能，用於判斷鎖定狀態
+    private Transform cameraTransform;       // 主攝影機變換參考，用於相機相對移動
 
-
-    // Internal variable to store the current movement direction and speed
-    private Vector3 moveDirection;
-
+    private Vector3 moveDirection;           // 當前的移動方向與速度向量
 
     void Start()
     {
-        // Get the CharacterController component attached to this GameObject
         controller = GetComponent<CharacterController>();
-        // Get the PlayerCombat component attached to this GameObject
+        playerState = GetComponent<PlayerState>();
         playerCombat = GetComponent<PlayerCombat>();
-        // Get the main camera's transform. Ensure your camera has the "MainCamera" tag.
         cameraTransform = Camera.main.transform;
 
-
-        // Ensure the CharacterController exists
-        if (controller == null)
+        // 檢查是否缺少必要元件
+        if (controller == null || playerState == null || playerCombat == null || cameraTransform == null)
         {
-            Debug.LogError("PlayerMovement requires a CharacterController component attached to the same GameObject.");
-            enabled = false; 
-            return;
-        }
-        // Ensure PlayerCombat exists
-        if (playerCombat == null)
-        {
-            Debug.LogError("PlayerMovement requires a PlayerCombat component attached to the same GameObject.");
-            enabled = false; 
-            return;
-        }
-        // Ensure the main camera exists
-        if (cameraTransform == null)
-        {
-            Debug.LogError("PlayerMovement requires a main camera in the scene with the 'MainCamera' tag.");
-            enabled = false; 
+            Debug.LogError("PlayerMovement missing required components.");
+            enabled = false; // 關閉腳本避免錯誤
             return;
         }
     }
 
-
     void Update()
     {
-        // If PlayerCombat is currently dashing, skip all movement and rotation.
-        if (playerCombat.IsDashing)
+        // 若玩家被動作鎖定（滑步、施法等），僅套用重力不處理輸入
+        if (playerState.IsActionLocked)
         {
-            return; 
+            ApplyGravity(); 
+            controller.Move(moveDirection * Time.deltaTime);
+            return;
         }
 
+        // 取得相機相對輸入方向
+        float horizontalInput = InputManager.GetHorizontalInput();
+        float verticalInput = InputManager.GetVerticalInput();
 
-        // --- 1. Handle Horizontal Input ---
-        float horizontalInput = Input.GetAxisRaw("Horizontal"); 
-        float verticalInput = Input.GetAxisRaw("Vertical");     
-
-
-        // --- 2. Calculate Camera-Relative Movement Vectors ---
+        // 根據相機方向計算移動向量
         Vector3 cameraForward = cameraTransform.forward;
         Vector3 cameraRight = cameraTransform.right;
 
-
         cameraForward.y = 0;
         cameraRight.y = 0;
-
-
         cameraForward.Normalize();
         cameraRight.Normalize();
 
-
-        // --- 3. Calculate Desired Movement Direction ---
+        // 計算相機相對的水平移動
         Vector3 desiredHorizontalMovement = (cameraForward * verticalInput) + (cameraRight * horizontalInput);
 
-
-        // --- 4. Handle Rotation (Only if NOT locked on) ---
+        // 若未鎖定敵人則允許旋轉角色朝移動方向
         if (!playerCombat.IsLockedOn)
         {
             if (desiredHorizontalMovement.magnitude > 0.1f)
             {
-                // Calculate the target rotation based on the horizontal movement vector
                 Quaternion targetRotation = Quaternion.LookRotation(desiredHorizontalMovement);
-
-
-                // Smoothly rotate the player towards the target rotation
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
             }
         }
-        // Note: If playerCombat.IsLockedOn is true, PlayerCombat handles the rotation.
 
-
-        // --- 5. Apply Speed and Prepare for CharacterController.Move ---
+        // 應用移動速度並切換玩家狀態
         if (desiredHorizontalMovement.magnitude > 0.1f)
         {
             desiredHorizontalMovement.Normalize();
             desiredHorizontalMovement *= moveSpeed;
+            playerState.SetState(PlayerState.State.Moving);
         }
         else
         {
-            desiredHorizontalMovement = Vector3.zero; // No input, no horizontal movement
-        }
-
-
-        // --- 6. Edge protection ---
-        bool canMove = true;
-        
-        if (desiredHorizontalMovement.magnitude > 0.1f) 
-        {
-            Vector3 raycastOrigin = transform.position + (desiredHorizontalMovement * ledgeDetectDistance) + (Vector3.up * 0.5f);
-
-            // Visualize the ray in the Scene view for easy debugging
-            Debug.DrawRay(raycastOrigin, Vector3.down * ledgeDetectHeight, Color.red);
-
-            // Perform the raycast downwards. If it doesn't hit anything, there's a ledge.
-            if (!Physics.Raycast(raycastOrigin, Vector3.down, ledgeDetectHeight))
+            desiredHorizontalMovement = Vector3.zero;
+            if (playerState.CurrentState == PlayerState.State.Moving)
             {
-                canMove = false; // There is no ground ahead, so we can't move.
+                playerState.ResetToIdle(); // 回到待機狀態
             }
         }
 
-        // --- 7. Reapply Vertical Velocity (Gravity) ---
-        float verticalVelocity = moveDirection.y; 
+        // 邊緣偵測邏輯，防止玩家走出平台
+        bool canMove = true;
+        if (desiredHorizontalMovement.magnitude > 0.1f)
+        {
+            Vector3 raycastOrigin = transform.position + (desiredHorizontalMovement.normalized * ledgeDetectDistance) + (Vector3.up * 0.5f);
+            Debug.DrawRay(raycastOrigin, Vector3.down * ledgeDetectHeight, Color.red);
+
+            // 若射線未擊中地面，代表前方是懸崖，禁止往前
+            if (!Physics.Raycast(raycastOrigin, Vector3.down, ledgeDetectHeight))
+            {
+                canMove = false;
+            }
+        }
+
+        // 套用垂直方向（重力）
+        float verticalVelocity = moveDirection.y;
         moveDirection = new Vector3(desiredHorizontalMovement.x, verticalVelocity, desiredHorizontalMovement.z);
 
+        // 套用重力效果
+        ApplyGravity();
 
-        // --- 8. Apply Gravity ---
-        if (controller.isGrounded == false)
-        {
-            moveDirection.y -= gravity * Time.deltaTime;
-        }
-        else
-        {
-            moveDirection.y = -0.5f;
-        }
-
-
-        // --- 9. Move the CharacterController ---
-        // If canMove is false, nullify the horizontal movement but keep the vertical (gravity).
+        // 若前方是懸崖，停止水平移動
         if (!canMove)
         {
             moveDirection.x = 0f;
             moveDirection.z = 0f;
         }
-        
+
+        // 最終移動指令
         controller.Move(moveDirection * Time.deltaTime);
     }
 
+    private void ApplyGravity()
+    {
+        // 若玩家未接觸地面則套用重力加速度
+        if (!controller.isGrounded)
+        {
+            moveDirection.y -= gravity * Time.deltaTime;
+        }
+        else
+        {
+            moveDirection.y = -0.5f; // 輕微的向下力保持貼地
+        }
+    }
 
-    /// <summary>
-    /// Resets the player's vertical velocity to a grounded state.
-    /// </summary>
     public void ResetVerticalVelocity()
     {
-        moveDirection.y = -0.5f;
+        moveDirection.y = -0.5f; // 重設垂直速度以避免落地後跳動
     }
 }
