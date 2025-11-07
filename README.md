@@ -320,8 +320,6 @@ public class PlayerMovement : MonoBehaviour
     public float moveSpeed = 30f;
     public float gravity = 160f;
     public float rotationSpeed = 10f;
-    public float ledgeDetectHeight = 10f;
-    public float ledgeDetectDistance = 0.05f;
     
     public void ResetVerticalVelocity();
 }
