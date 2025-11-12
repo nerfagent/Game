@@ -18,11 +18,12 @@ public class CooldownSystem : MonoBehaviour
         {
             Destroy(gameObject);
         }
+        InitializeSkills();
     }
 
     private void Start()
     {
-        InitializeSkills();
+        
     }
 
     private void InitializeSkills()
@@ -132,5 +133,10 @@ public class CooldownSystem : MonoBehaviour
         if (skillIndex < 0 || skillIndex >= skills.Length)
             return null;
         return skills[skillIndex];
+    }
+
+    public int GetSkillCount()
+    {
+        return skills.Length;
     }
 }
