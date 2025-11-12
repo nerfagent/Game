@@ -106,6 +106,55 @@ public class PersistentStateManager : MonoBehaviour
     {
         return stringStates.TryGetValue(stateKey, out var value) ? value : defaultValue;
     }
+    
+    /// <summary>
+    /// 獲取所有布林狀態
+    /// </summary>
+    public Dictionary<string, bool> GetAllBoolStates()
+    {
+        return new Dictionary<string, bool>(booleanStates);
+    }
+
+    /// <summary>
+    /// 獲取所有整數狀態
+    /// </summary>
+    public Dictionary<string, int> GetAllIntStates()
+    {
+        return new Dictionary<string, int>(integerStates);
+    }
+
+    /// <summary>
+    /// 獲取所有浮點數狀態
+    /// </summary>
+    public Dictionary<string, float> GetAllFloatStates()
+    {
+        return new Dictionary<string, float>(floatStates);
+    }
+
+    /// <summary>
+    /// 獲取所有字串狀態
+    /// </summary>
+    public Dictionary<string, string> GetAllStringStates()
+    {
+        return new Dictionary<string, string>(stringStates);
+    }
+
+    /// <summary>
+    /// 從存檔加載狀態
+    /// </summary>
+    public void LoadStates(
+        Dictionary<string, bool> boolStates,
+        Dictionary<string, int> intStates,
+        Dictionary<string, float> floatStates,
+        Dictionary<string, string> strStates)
+    {
+        booleanStates = new Dictionary<string, bool>(boolStates);
+        integerStates = new Dictionary<string, int>(intStates);
+        this.floatStates = new Dictionary<string, float>(floatStates);
+        stringStates = new Dictionary<string, string>(strStates);
+        
+        Debug.Log("持久化狀態已從存檔加載");
+    }
 
     /// <summary>
     /// 檢查狀態是否存在

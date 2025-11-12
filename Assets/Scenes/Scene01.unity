@@ -1943,6 +1943,77 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1476980912}
   m_LocalEulerAnglesHint: {x: -16.61, y: 0, z: 0.52}
+--- !u!1 &236796293
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 236796294}
+  - component: {fileID: 236796296}
+  - component: {fileID: 236796295}
+  m_Layer: 0
+  m_Name: Checkpoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &236796294
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 236796293}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.04672398, z: -0, w: 0.99890786}
+  m_LocalPosition: {x: 10.274859, y: 32, z: -157.65926}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 5.356, z: 0}
+--- !u!114 &236796295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 236796293}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b52d2a2ff218d7a40a4533f3340f7410, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  checkpointID: 1
+  checkpointSceneName: Scene01
+  playerSpawnPosition: {x: 5.75, y: 30.9, z: -166.7}
+  activatedEffect: {fileID: 0}
+  showDebugInfo: 1
+--- !u!65 &236796296
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 236796293}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 14.426153, y: 14.082523, z: 14.1054535}
+  m_Center: {x: -3.0840902, y: 4.101412, z: 6.5527267}
 --- !u!1 &284600097
 GameObject:
   m_ObjectHideFlags: 0
@@ -16917,3 +16988,4 @@ SceneRoots:
   - {fileID: 73381194}
   - {fileID: 832575519}
   - {fileID: 1893477811}
+  - {fileID: 236796294}

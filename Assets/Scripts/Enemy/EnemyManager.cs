@@ -8,9 +8,10 @@ public class EnemyManager : MonoBehaviour
 
     // 所有活躍敵人列表
     private List<BaseEnemy> activeEnemies = new List<BaseEnemy>();
-    
+
     // Boss 註冊表：以名稱為鍵，便於查詢特定 Boss（shouldRespawn = false 的敵人）
     private Dictionary<string, BaseEnemy> bossRegistry = new Dictionary<string, BaseEnemy>();
+    private List<string> defeatedBosses = new List<string>();
 
     private void Awake()
     {
@@ -78,6 +79,46 @@ public class EnemyManager : MonoBehaviour
             return enemy;
         }
         return null;
+    }
+
+    /// <summary>
+    /// 獲取已擊敗的Boss列表
+    /// </summary>
+    public List<string> GetDefeatedBossList()
+    {
+        return new List<string>(defeatedBosses);
+    }
+
+    /// <summary>
+    /// 從存檔加載已擊敗的Boss
+    /// </summary>
+    public void LoadDefeatedBosses(List<string> bossList)
+    {
+        defeatedBosses = new List<string>(bossList);
+        
+        // 禁用已擊敗的Boss
+        foreach (string bossName in defeatedBosses)
+        {
+            BaseEnemy boss = GetBoss(bossName);
+            if (boss != null && !boss.ShouldRespawn)
+            {
+                boss.gameObject.SetActive(false);
+            }
+        }
+        
+        Debug.Log($"已加載 {defeatedBosses.Count} 個已擊敗的Boss");
+    }
+
+    /// <summary>
+    /// 記錄Boss被擊敗（在BaseEnemy.Die()中調用）
+    /// </summary>
+    public void RecordBossDefeated(string bossName)
+    {
+        if (!defeatedBosses.Contains(bossName))
+        {
+            defeatedBosses.Add(bossName);
+            Debug.Log($"Boss已擊敗: {bossName}");
+        }
     }
 
     /// <summary>

@@ -29,6 +29,4 @@ public class UIManager : MonoBehaviour
             Debug.LogError("CooldownSystem Instance is null");
         }
     }
-
-
 }
