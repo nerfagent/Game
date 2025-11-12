@@ -16,4 +16,7 @@ public static class InputManager
     public static bool GetSkill2Input() => Input.GetKeyDown(KeyCode.W);
     public static bool GetSkill3Input() => Input.GetKeyDown(KeyCode.E);
     public static bool GetSkill4Input() => Input.GetKeyDown(KeyCode.R);
+
+    // Pause input
+    public static bool GetPauseInput() => Input.GetKeyDown(KeyCode.Escape);
 }

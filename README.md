@@ -12,6 +12,8 @@ Assets/
 │   │   ├── EventManager.cs
 │   │   ├── InputManager.cs
 │   │   ├── GameStarter.cs
+│   │   ├── PauseManager.cs
+│   │   ├── UIManager.cs
 │   ├── Player/
 │   │   ├── PlayerController.cs
 │   │   ├── PlayerMovement.cs
@@ -43,10 +45,13 @@ Assets/
 │   │   ├── PersistentStateManager.cs
 │   │   ├── InteractiveObject.cs
 │   │   ├── LevelExit.cs
+│   │   ├── TransitionController.cs
 │   ├── Data/
 │   │   ├── PlayerStats.cs
 │   │   ├── PersistentState.cs
 │   │   ├── SaveData.cs
+│   ├── UI/
+│   │   ├── SkillUI.cs
 ├── Scenes/
 ├── Prefabs/
 ├── Art/
@@ -210,6 +215,11 @@ if (InputManager.GetSkill4Input())
 {
     // 施放技能4
 }
+
+if (InputManager.GetPauseInput())
+{
+    // 暫停
+}
 ```
 
 **支援的輸入方法：**
@@ -218,6 +228,7 @@ if (InputManager.GetSkill4Input())
 - `GetLockOnInput()` - 鎖定敵人（Shift）
 - `GetDashInput()` - 衝刺（Z）
 - `GetSkill1Input()` 至 `GetSkill4Input()` - 技能施放（Q/W/E/R）
+- `GetPauseInput()` - 暫停
 
 ---
 
@@ -1466,5 +1477,84 @@ public class GameStarter : MonoBehaviour
 2. 附加 GameStarter 指令碼
 3. 在 Inspector 設定關卡名稱和生成位置
 4. 播放遊戲
+
+---
+
+## PauseManager：遊戲暫停系統
+
+**責任：** 管理遊戲時間暫停/繼續，提供簡單的暫停狀態控制
+
+### 核心概念
+
+暫停系統使用一個簡單的布林旗標來追蹤暫停狀態，通過 `Time.timeScale` 來控制時間流逝。當 `Time.timeScale = 0` 時，所有基於 `Time.deltaTime` 的更新都會停止。
+
+### PauseManager：單例
+
+**主要屬性與方法：**
+
+```csharp
+public class PauseManager : MonoBehaviour
+{
+    public static PauseManager Instance { get; private set; }
+    
+    public bool IsPaused { get; }  // 當前暫停狀態
+    
+    // 暫停遊戲
+    public void Pause();
+    
+    // 恢復遊戲
+    public void Resume();
+}
+```
+
+**使用方式：**
+
+```csharp
+// 暫停遊戲
+PauseManager.Instance.Pause();
+
+// 繼續遊戲
+PauseManager.Instance.Resume();
+
+// 檢查當前是否暫停
+if (PauseManager.Instance.IsPaused)
+{
+    // 顯示暫停菜單
+}
+```
+
+**核心特性：**
+- ESC 鍵自動切換暫停狀態
+- `Time.timeScale` 控制遊戲時間
+- 觸發事件 `OnGamePaused` 和 `OnGameResumed`
+- 與 `GameManager` 集成，管理遊戲狀態
+
+### 重要：需要更新的系統
+
+某些系統需要使用 `Time.unscaledDeltaTime` 才能在暫停時正常運作。
+
+#### 需要暫停時仍然更新的系統
+
+**UI 冷卻顯示：** 即使遊戲暫停，UI 的冷卻條進度也應該顯示。但由於技能冷卻本身使用 `Time.deltaTime`，所以暫停時冷卻進度會停止（這通常是想要的行為）。
+
+**UI 動畫：** 如果暫停菜單本身有動畫，使用 Canvas Group 的 `alpha` 動畫不會受 `Time.timeScale` 影響。
+
+### 事件系統整合
+
+暫停系統通過 `EventManager` 發送事件，其他系統可以監聽以做出反應：
+
+```csharp
+// 監聽暫停事件
+EventManager.StartListening("OnGamePaused", () =>
+{
+    Debug.Log("遊戲暫停，可以顯示 UI");
+});
+
+// 監聽繼續事件
+EventManager.StartListening("OnGameResumed", () =>
+{
+    Debug.Log("遊戲繼續，可以隱藏 UI");
+});
+```
 
 ---

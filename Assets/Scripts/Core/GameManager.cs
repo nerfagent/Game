@@ -37,16 +37,14 @@ public class GameManager : MonoBehaviour
     {
         if (CurrentState != GameState.Playing) return;
         CurrentState = GameState.Paused;
-        Time.timeScale = 0f;
-        EventManager.TriggerEvent("OnGamePaused");
+        PauseManager.Instance.Pause();
     }
 
     public void ResumeGame()
     {
         if (CurrentState != GameState.Paused) return;
         CurrentState = GameState.Playing;
-        Time.timeScale = 1f;
-        EventManager.TriggerEvent("OnGameResumed");
+        PauseManager.Instance.Resume();
     }
 
     public void GameOver()
