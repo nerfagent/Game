@@ -345,19 +345,24 @@ public abstract class BaseEnemy : MonoBehaviour
     /// </summary>
     protected virtual void Die()
     {
-        if (currentState == EnemyState.Dead) return; // 防止重複執行
+        if (currentState == EnemyState.Dead) return;
 
         currentState = EnemyState.Dead;
         velocity = Vector3.zero;
 
-        // *** 在持久化管理器中記錄死亡狀態 ***
-        // 普通敵人使用 "EnemyDead_" 前綴，Boss 使用 "BossDefeated_" 前綴
-        string persistentKey = (shouldRespawn ? "EnemyDead_" : "BossDefeated_") + uniqueID;
-        PersistentStateManager.Instance.SetBoolState(persistentKey, true);
-
-        // 如果是 Boss，額外記錄到 EnemyManager 的列表中以供存檔
-        if (!shouldRespawn)
+        // *** 核心修改：區分普通敵人和 Boss 的死亡記錄方式 ***
+        if (shouldRespawn)
         {
+            // 普通敵人：通知 EnemyManager 在當前 Session 記錄死亡
+            EnemyManager.Instance.RecordSessionEnemyDeath(uniqueID);
+        }
+        else
+        {
+            // Boss：在持久化管理器中記錄永久性死亡
+            string persistentKey = "BossDefeated_" + uniqueID;
+            PersistentStateManager.Instance.SetBoolState(persistentKey, true);
+            
+            // 同時記錄到 EnemyManager 的列表中以供存檔
             EnemyManager.Instance.RecordBossDefeated(uniqueID);
         }
 
@@ -365,8 +370,7 @@ public abstract class BaseEnemy : MonoBehaviour
         EventManager.TriggerEvent("OnEnemyDefeated");
 
         Debug.Log($"{gameObject.name} ({uniqueID}) 已被擊敗！狀態已記錄。");
-
-        // 停用物件，而不是銷毀
+        
         gameObject.SetActive(false);
     }
 

@@ -9,7 +9,10 @@ public class EnemyManager : MonoBehaviour
     // 按場景名稱存儲所有 Spawner
     private Dictionary<string, List<EnemySpawner>> spawnersByScene = new Dictionary<string, List<EnemySpawner>>();
     
-    // 僅用於存檔目的
+    // 記錄當前 Session 普通敵人死亡的列表
+    private HashSet<string> sessionDeadEnemies = new HashSet<string>();
+
+    // 僅用於存檔的 Boss 列表
     private List<string> defeatedBosses = new List<string>();
 
     private void Awake()
@@ -87,17 +90,34 @@ public class EnemyManager : MonoBehaviour
         Debug.Log($"處理場景 {sceneName} 的敵人生成...");
         foreach (EnemySpawner spawner in spawnersByScene[sceneName])
         {
-            // 檢查持久化狀態，決定是否生成
-            string persistentKey = (spawner.IsNormalEnemy ? "EnemyDead_" : "BossDefeated_") + spawner.UniqueID;
-            bool isDefeated = PersistentStateManager.Instance.GetBoolState(persistentKey, false);
+            bool shouldSpawn = true;
+            
+            // *** 核心修改：根據敵人類型檢查不同的死亡記錄 ***
+            if (spawner.IsNormalEnemy)
+            {
+                // 普通敵人：檢查 Session 死亡列表
+                if (sessionDeadEnemies.Contains(spawner.UniqueID))
+                {
+                    shouldSpawn = false;
+                }
+            }
+            else // 是 Boss
+            {
+                // Boss：檢查持久化狀態
+                string persistentKey = "BossDefeated_" + spawner.UniqueID;
+                if (PersistentStateManager.Instance.GetBoolState(persistentKey, false))
+                {
+                    shouldSpawn = false;
+                }
+            }
 
-            if (!isDefeated)
+            if (shouldSpawn)
             {
                 spawner.SpawnEnemy();
             }
             else
             {
-                Debug.Log($"敵人 {spawner.UniqueID} 已被擊敗，此次不生成。");
+                Debug.Log($"敵人 {spawner.UniqueID} 已被擊敗或在本會話中死亡，此次不生成。");
             }
         }
     }
@@ -111,26 +131,40 @@ public class EnemyManager : MonoBehaviour
         if (!spawnersByScene.ContainsKey(currentScene)) return;
 
         Debug.Log($"檢查點休息：重生場景 {currentScene} 的普通敵人。");
-        foreach (EnemySpawner spawner in spawnersByScene[currentScene])
+
+        // 使用 ToList() 創建副本以安全修改 HashSet
+        foreach (EnemySpawner spawner in spawnersByScene[currentScene].ToList())
         {
-            // 只重生普通敵人
             if (spawner.IsNormalEnemy)
             {
-                string persistentKey = "EnemyDead_" + spawner.UniqueID;
-                
-                // 檢查是否處於已死亡狀態
-                bool wasDead = PersistentStateManager.Instance.GetBoolState(persistentKey, false);
-                
-                if(wasDead)
+                // 如果這個敵人在會話死亡列表中，將其移除並重生
+                if (sessionDeadEnemies.Remove(spawner.UniqueID))
                 {
-                    // 在持久化狀態中將其標記為“未死亡”
-                    PersistentStateManager.Instance.SetBoolState(persistentKey, false);
-                    
-                    // 指示 Spawner 立即重生該敵人
+                    Debug.Log($"從會話死亡列表中移除 {spawner.UniqueID} 並重生。");
                     spawner.SpawnEnemy();
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// 記錄一個普通敵人在當前會話中死亡。
+    /// </summary>
+    public void RecordSessionEnemyDeath(string enemyID)
+    {
+        if (!sessionDeadEnemies.Contains(enemyID))
+        {
+            sessionDeadEnemies.Add(enemyID);
+        }
+    }
+
+    /// <summary>
+    /// 清空所有普通敵人的會話死亡記錄。在讀檔時呼叫。
+    /// </summary>
+    public void ClearSessionEnemyDeaths()
+    {
+        sessionDeadEnemies.Clear();
+        Debug.Log("已清空當前會話的敵人死亡記錄。");
     }
 
     /// <summary>

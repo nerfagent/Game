@@ -201,6 +201,40 @@ public class SaveLoadManager : MonoBehaviour
             Debug.LogWarning("存檔數據為空，無法應用");
             return;
         }
+
+        // 應用持久化狀態
+        if (PersistentStateManager.Instance != null)
+        {
+            PersistentStateManager.Instance.LoadStates(
+                data.booleanStates,
+                data.integerStates,
+                data.floatStates,
+                data.stringStates
+            );
+        }
+
+        // 應用已擊敗的Boss
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.LoadDefeatedBosses(data.defeatedBosses);
+        }
+
+        // 在應用任何數據之前，清空舊的會話狀態
+        if (EnemyManager.Instance != null)
+        {
+            // 1. 清空所有普通敵人的會話死亡記錄
+            EnemyManager.Instance.ClearSessionEnemyDeaths();
+            
+            // 2. 獲取剛加載完成的場景名稱
+            string currentScene = LevelManager.Instance.GetCurrentLevelName();
+            
+            // 3. 命令 EnemyManager 立即為此場景重新生成所有普通敵人
+            if (!string.IsNullOrEmpty(currentScene))
+            {
+                Debug.Log($"讀檔完成，為場景 {currentScene} 重新生成所有普通敵人...");
+                EnemyManager.Instance.ProcessSpawnsForLevel(currentScene);
+            }
+        }
         
         // 應用玩家最大生命值
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -221,23 +255,6 @@ public class SaveLoadManager : MonoBehaviour
             ApplySkillUpgrades(1, data.skill1Upgrades);
             ApplySkillUpgrades(2, data.skill2Upgrades);
             ApplySkillUpgrades(3, data.skill3Upgrades);
-        }
-        
-        // 應用持久化狀態
-        if (PersistentStateManager.Instance != null)
-        {
-            PersistentStateManager.Instance.LoadStates(
-                data.booleanStates,
-                data.integerStates,
-                data.floatStates,
-                data.stringStates
-            );
-        }
-        
-        // 應用已擊敗的Boss
-        if (EnemyManager.Instance != null)
-        {
-            EnemyManager.Instance.LoadDefeatedBosses(data.defeatedBosses);
         }
         
         // 重置技能冷卻
