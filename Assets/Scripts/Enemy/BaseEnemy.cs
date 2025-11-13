@@ -8,6 +8,11 @@ public abstract class BaseEnemy : MonoBehaviour
     [SerializeField] protected float maxHP = 50f;     // 最大生命值
     protected float currentHP;                         // 當前生命值
 
+    [Header("ID 與重生")]
+    [Tooltip("敵人在遊戲中的唯一標識符。手動或自動生成以確保唯一性。")]
+    [SerializeField] protected string uniqueID;
+    [SerializeField] protected bool shouldRespawn = true;      // true = 普通敵人, false = Boss
+
     [Header("移動")]
     [SerializeField] protected float moveSpeed = 5f;           // 移動速度
     [SerializeField] protected float stoppingDistance = 2f;    // 停止距離（攻擊範圍）
@@ -19,7 +24,7 @@ public abstract class BaseEnemy : MonoBehaviour
     [SerializeField] protected LayerMask wallLayer;            // 普通牆壁圖層
     [SerializeField] protected LayerMask invisibleWallLayer;   // 隱形牆壁圖層
 
-    [Header("走位逃亡 (方案B)")]
+    [Header("走位逃亡")]
     [SerializeField] protected float evadeRangeMin = 10f;      // 最小走位距離
     [SerializeField] protected float evadeRangeMax = 20f;      // 最大走位距離
     [SerializeField] protected float evadeDurationMin = 2f;    // N: 走位時長最小值
@@ -27,9 +32,6 @@ public abstract class BaseEnemy : MonoBehaviour
     [SerializeField] protected float directionChangeInterval = 1f;  // 每秒檢查一次改變方向的概率
     [SerializeField] protected float initialDirectionChangeProbability = 0.1f;  // 初始改變方向概率（初期低）
     [SerializeField] protected float maxDirectionChangeProbability = 0.8f;      // 最大改變方向概率（後期高）
-
-    [Header("重生設定")]
-    [SerializeField] protected bool shouldRespawn = true;  // true = 普通敵人會重生，false = Boss 不重生
 
     [Header("元件參考")]
     protected CharacterController characterController;  // 角色控制器
@@ -47,7 +49,7 @@ public abstract class BaseEnemy : MonoBehaviour
     // 敵人 ID（用於事件系統）
     protected int enemyID;
 
-    // 走位相關變數 (方案B)
+    // 走位相關變數
     protected Vector3 currentEvadeDirection = Vector3.zero;        // 當前走位方向
     protected float evadeDuration = 0f;                            // 本次走位的總時長
     protected float evadeElapsedTime = 0f;                         // 走位已經過時間
@@ -59,6 +61,7 @@ public abstract class BaseEnemy : MonoBehaviour
     public float MaxHP => maxHP;
     public bool IsDead => currentState == EnemyState.Dead;
     public bool ShouldRespawn => shouldRespawn;
+    public string UniqueID => uniqueID;
 
     protected virtual void Awake()
     {
@@ -71,7 +74,6 @@ public abstract class BaseEnemy : MonoBehaviour
         }
 
         currentHP = maxHP;                   // 初始化生命值為滿血
-        enemyID = GetInstanceID();           // 使用實例 ID 作為唯一識別碼
     }
 
     protected virtual void Start()
@@ -86,6 +88,14 @@ public abstract class BaseEnemy : MonoBehaviour
         {
             Debug.LogWarning("BaseEnemy: 找不到玩家。敵人將保持待機。");
         }
+    }
+
+    /// <summary>
+    /// 由 EnemySpawner 分配唯一 ID
+    /// </summary>
+    public void AssignUniqueID(string id)
+    {
+        this.uniqueID = id;
     }
 
     protected virtual void Update()
@@ -331,18 +341,32 @@ public abstract class BaseEnemy : MonoBehaviour
     }
 
     /// <summary>
-    /// 敵人死亡。觸發死亡事件並停用物件。
+    /// 敵人死亡。
     /// </summary>
     protected virtual void Die()
     {
+        if (currentState == EnemyState.Dead) return; // 防止重複執行
+
         currentState = EnemyState.Dead;
         velocity = Vector3.zero;
 
-        EventManager.TriggerEvent($"OnEnemy{enemyID}Died");
+        // *** 在持久化管理器中記錄死亡狀態 ***
+        // 普通敵人使用 "EnemyDead_" 前綴，Boss 使用 "BossDefeated_" 前綴
+        string persistentKey = (shouldRespawn ? "EnemyDead_" : "BossDefeated_") + uniqueID;
+        PersistentStateManager.Instance.SetBoolState(persistentKey, true);
+
+        // 如果是 Boss，額外記錄到 EnemyManager 的列表中以供存檔
+        if (!shouldRespawn)
+        {
+            EnemyManager.Instance.RecordBossDefeated(uniqueID);
+        }
+
+        EventManager.TriggerEvent($"OnEnemy{GetInstanceID()}Died");
         EventManager.TriggerEvent("OnEnemyDefeated");
 
-        Debug.Log($"{gameObject.name} 已被擊敗！");
+        Debug.Log($"{gameObject.name} ({uniqueID}) 已被擊敗！狀態已記錄。");
 
+        // 停用物件，而不是銷毀
         gameObject.SetActive(false);
     }
 
@@ -375,6 +399,7 @@ public abstract class BaseEnemy : MonoBehaviour
     /// </summary>
     public virtual void ResetEnemy()
     {
+        gameObject.SetActive(true);
         currentHP = maxHP;
         currentState = EnemyState.Idle;
         playerInSight = false;

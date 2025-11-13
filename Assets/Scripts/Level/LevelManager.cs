@@ -38,25 +38,14 @@ public class LevelManager : MonoBehaviour
     private void Start()
     {
         persistentState = PersistentStateManager.Instance;
-        enemyManager = EnemyManager.Instance;
         transitionController = TransitionController.Instance;
         
-        // 尋找玩家並獲取其組件參考
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null)
         {
             playerTransform = playerObj.transform;
             playerCharacterController = playerObj.GetComponent<CharacterController>();
         }
-
-        // 訂閱檢查點休息事件
-        EventManager.StartListening("OnCheckpointRest", OnCheckpointRest);
-    }
-
-    private void OnDestroy()
-    {
-        // 取消訂閱事件
-        EventManager.StopListening("OnCheckpointRest", OnCheckpointRest);
     }
 
     /// <summary>
@@ -108,7 +97,7 @@ public class LevelManager : MonoBehaviour
 
         // 第 4 步：等待場景完全初始化（等待所有 Start() 呼叫完成）
         yield return new WaitForEndOfFrame();
-        yield return new WaitForEndOfFrame();  // 雙重等待確保完全初始化
+        yield return new WaitForEndOfFrame();
 
         // 第 5 步：恢復世界狀態（如：開啟的門、啟動的機關等）
         RestoreWorldState();
@@ -128,12 +117,7 @@ public class LevelManager : MonoBehaviour
             Debug.LogError("找不到玩家或角色控制器！");
         }
 
-        // 第 7 步：刷新敵人列表並重生普通敵人
-        yield return new WaitForEndOfFrame();  // 等待玩家穩定位置
-        enemyManager.RefreshEnemyList();
-        enemyManager.RespawnRegularEnemies();
-
-        // 第 8 步：觸發完成事件
+        // 第 7 步：觸發完成事件
         EventManager.TriggerEvent("OnLevelLoaded");
         EventManager.TriggerEvent($"OnLevel{levelName}Loaded");
 
@@ -169,15 +153,6 @@ public class LevelManager : MonoBehaviour
     public bool IsTransitioning()
     {
         return isTransitioning;
-    }
-
-    /// <summary>
-    /// 檢查點休息時的回調。
-    /// 重新整理敵人列表（以確保敵人狀態一致）。
-    /// </summary>
-    private void OnCheckpointRest()
-    {
-        enemyManager.RefreshEnemyList();
     }
 
     /// <summary>

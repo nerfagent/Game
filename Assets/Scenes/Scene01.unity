@@ -7760,7 +7760,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 4972486020456408108, guid: d710c6c66e2b4ee498c3b582ae734b3b,
     type: 3}
-  shouldRespawnAfterCheckpoint: 1
+  enemyUniqueID: ABC
 --- !u!4 &614972460
 Transform:
   m_ObjectHideFlags: 0

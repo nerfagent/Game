@@ -5,74 +5,75 @@ public class SlashVFXHandler : MonoBehaviour
     [Tooltip("Layer containing enemy GameObjects for collision detection.")]
     public LayerMask enemyLayer;
 
-    [Header("Impact VFX Settings")] // New header
+    [Header("攻擊設定")]
+    [Tooltip("此斬擊造成的傷害值")]
+    public int damage = 25;
+
+    [Header("Impact VFX Settings")]
     [Tooltip("Prefab for the impact effect to spawn when an enemy is hit.")]
     public GameObject impactVFXPrefab;
 
-    private ParticleSystem mainSlashParticleSystem; // Renamed for clarity
+    private ParticleSystem mainSlashParticleSystem;
+    private Collider attackCollider;
 
     void Awake()
     {
-        // Get the main ParticleSystem component on this GameObject or its children
         mainSlashParticleSystem = GetComponentInChildren<ParticleSystem>();
+        attackCollider = GetComponent<Collider>();
 
         if (mainSlashParticleSystem == null)
         {
-            Debug.LogWarning("SlashVFXHandler: No ParticleSystem found on this GameObject or its children. Main VFX will not play.", this);
-            enabled = false; // Disable script if no particle system is found
+            Debug.LogWarning("SlashVFXHandler: No ParticleSystem found. Main VFX will not play.", this);
+            enabled = false;
             return;
         }
     }
 
     void Start()
     {
-        // Ensure the main slash particle system plays
         if (mainSlashParticleSystem != null)
         {
             mainSlashParticleSystem.Play();
-
-            // Automatically destroy the main slash GameObject after its particle system finishes
             float totalDuration = mainSlashParticleSystem.main.duration + mainSlashParticleSystem.main.startLifetime.constantMax;
             Destroy(gameObject, totalDuration);
         }
         else
         {
-            // If for some reason it was null in Start (shouldn't happen if Awake worked), destroy it.
             Destroy(gameObject);
         }
 
-        // Ensure enemyLayer is set up in the Inspector
         if (enemyLayer.value == 0)
         {
-            Debug.LogWarning("Enemy LayerMask for SlashVFXHandler is not set. Slash VFX might not destroy enemies correctly. Please set the 'Enemy Layer' in the Inspector of the Slash VFX prefab.");
+            Debug.LogWarning("Enemy LayerMask for SlashVFXHandler is not set. Please set it in the prefab inspector.");
         }
     }
 
-    // This method is called when the collider marked as a trigger enters another collider.
     void OnTriggerEnter(Collider other)
     {
-        // Check if the collided object is on the enemyLayer
         if (((1 << other.gameObject.layer) & enemyLayer.value) != 0)
         {
-            Debug.Log("Slash VFX hit " + other.gameObject.name + ". Destroying enemy.");
-            Destroy(other.gameObject);
-
-            // --- NEW: Spawn Impact VFX at the enemy's position ---
-            if (impactVFXPrefab != null)
+            // 嘗試獲取敵人的BaseEnemy組件並造成傷害
+            if (other.TryGetComponent<BaseEnemy>(out var enemy) && !enemy.IsDead)
             {
-                // Instantiate the impact VFX at the enemy's position.
-                // Quaternion.identity means no specific rotation, which is often fine for impact effects.
-                // You might want to adjust the Y position slightly (e.g., + Vector3.up * 0.5f)
-                // if the enemy's pivot is at its base and the impact should be higher.
-                Instantiate(impactVFXPrefab, other.transform.position, Quaternion.identity);
-            }
-            else
-            {
-                Debug.LogWarning("Impact VFX Prefab is not assigned in SlashVFXHandler. No impact effect will play.");
-            }
+                Debug.Log($"Slash VFX hit {other.gameObject.name}. Applying {damage} damage.");
+                enemy.TakeDamage(damage);
 
-            // Optional: If you want the slash to only hit one enemy, you could disable its collider here:
-            // GetComponent<Collider>().enabled = false;
+                // 在敵人位置生成衝擊特效
+                if (impactVFXPrefab != null)
+                {
+                    Instantiate(impactVFXPrefab, other.transform.position, Quaternion.identity);
+                }
+                else
+                {
+                    Debug.LogWarning("Impact VFX Prefab is not assigned in SlashVFXHandler.");
+                }
+
+                // 為了防止一次斬擊對同一個敵人造成多次傷害，可以禁用碰撞器
+                if (attackCollider != null)
+                {
+                    attackCollider.enabled = false;
+                }
+            }
         }
     }
 }
