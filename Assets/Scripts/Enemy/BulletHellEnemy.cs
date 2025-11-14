@@ -54,7 +54,7 @@ public class BulletHellEnemy : BaseEnemy
         Vector3 centerVelocity = directionToPlayer * 25f;
         Vector3 centerStartPos = transform.position + Vector3.up * 0.5f;
         
-        int bulletCount = 6;
+        int bulletCount = 5;
         float angleStep = 360f / bulletCount;
         
         // 生成圓形陣型
@@ -69,7 +69,7 @@ public class BulletHellEnemy : BaseEnemy
                     centerMoveVelocity: centerVelocity,
                     initialRadius: 1f,       // 起始半徑
                     radiusGrowth: 12f,       // 半徑擴張速度
-                    rotSpeed: 100f,          // 旋轉速度
+                    rotSpeed: 50f,          // 旋轉速度
                     startAngle: angle        // 起始角度（均勻分布）
                 )
             );
