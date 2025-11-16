@@ -1,5 +1,6 @@
 // Assets/Scripts/Core/PauseManager.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PauseManager : MonoBehaviour
 {
@@ -24,15 +25,19 @@ public class PauseManager : MonoBehaviour
     private void Start()
     {
         // Subscribe to game events
-        EventManager.StartListening("OnGamePaused", OnGamePausedEvent);
-        EventManager.StartListening("OnGameResumed", OnGameResumedEvent);
+        GameManager.onGamePaused += OnGamePausedEvent;
+        GameManager.onGameResumed += OnGameResumedEvent;
+        //EventManager.StartListening("OnGamePaused", OnGamePausedEvent);
+        //EventManager.StartListening("OnGameResumed", OnGameResumedEvent);
     }
 
 
     private void OnDestroy()
     {
-        EventManager.StopListening("OnGamePaused", OnGamePausedEvent);
-        EventManager.StopListening("OnGameResumed", OnGameResumedEvent);
+        GameManager.onGamePaused -= OnGamePausedEvent;
+        GameManager.onGameResumed -= OnGameResumedEvent;
+        //EventManager.StopListening("OnGamePaused", OnGamePausedEvent);
+        //EventManager.StopListening("OnGameResumed", OnGameResumedEvent);
     }
     
     private void OnGamePausedEvent()
@@ -72,7 +77,8 @@ public class PauseManager : MonoBehaviour
         
         isPaused = true;
         Time.timeScale = 0f;
-        EventManager.TriggerEvent("OnGamePaused");
+        //EventManager.TriggerEvent("OnGamePaused");
+        GameManager.onGamePaused.Invoke();
         Debug.Log("Game paused");
     }
     
@@ -86,7 +92,8 @@ public class PauseManager : MonoBehaviour
         
         isPaused = false;
         Time.timeScale = 1f;
-        EventManager.TriggerEvent("OnGameResumed");
+        //EventManager.TriggerEvent("OnGameResumed");
+        GameManager.onGameResumed.Invoke();
         Debug.Log("Game resumed");
     }
 }

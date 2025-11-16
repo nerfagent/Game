@@ -1,8 +1,11 @@
 // Assets/Scripts/Level/Checkpoint.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 public class Checkpoint : MonoBehaviour
 {
+    [HideInInspector] public static UnityAction onCheckpointRest;
+
     [Header("檢查點設定")]
     [SerializeField] private string checkpointID;  // 唯一識別碼
     [SerializeField] private string checkpointSceneName;  // 檢查點所在場景名稱
@@ -85,7 +88,8 @@ public class Checkpoint : MonoBehaviour
         
         // 觸發事件
         EventManager.TriggerEvent("OnCheckpointActivated");
-        EventManager.TriggerEvent("OnCheckpointRest");  // 重生敵人事件
+        //EventManager.TriggerEvent("OnCheckpointRest");  // 重生敵人事件
+        onCheckpointRest.Invoke();
         
         if (showDebugInfo)
         {

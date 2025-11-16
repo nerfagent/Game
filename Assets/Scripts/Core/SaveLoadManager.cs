@@ -1,12 +1,13 @@
 // Assets/Scripts/Core/SaveLoadManager.cs
-using UnityEngine;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+using UnityEngine.Events;
 
 public class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager Instance { get; private set; }
-    
+    public static UnityAction onLevelLoaded;
     private string saveFilePath;
     private SaveData currentSaveData;
     private bool isLoadingFromSave = false;  // 標記是否正在從存檔讀取
@@ -31,12 +32,14 @@ public class SaveLoadManager : MonoBehaviour
     private void Start()
     {
         // 訂閱關卡加載完成事件
-        EventManager.StartListening("OnLevelLoaded", OnLevelLoadedAfterLoad);
+        //EventManager.StartListening("OnLevelLoaded", OnLevelLoadedAfterLoad);
+        onLevelLoaded += OnLevelLoadedAfterLoad;
     }
     
     private void OnDestroy()
     {
-        EventManager.StopListening("OnLevelLoaded", OnLevelLoadedAfterLoad);
+        //EventManager.StopListening("OnLevelLoaded", OnLevelLoadedAfterLoad);
+        onLevelLoaded -= OnLevelLoadedAfterLoad;
     }
     
     private void Update()

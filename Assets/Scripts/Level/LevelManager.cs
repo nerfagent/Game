@@ -118,7 +118,8 @@ public class LevelManager : MonoBehaviour
         }
 
         // 第 7 步：觸發完成事件
-        EventManager.TriggerEvent("OnLevelLoaded");
+        //EventManager.TriggerEvent("OnLevelLoaded");
+        SaveLoadManager.onLevelLoaded.Invoke();
         EventManager.TriggerEvent($"OnLevel{levelName}Loaded");
 
         isTransitioning = false;
