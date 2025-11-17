@@ -18,6 +18,10 @@ public class SkillSystem : MonoBehaviour
         if(onSkillCastComplete == null)
         {
             onSkillCastComplete = new UnityAction[4];
+            for(int i = 0; i < onSkillCastComplete.Length; i++)
+            {
+                onSkillCastComplete[i] = () => { };
+            }
         }
         if (Instance == null)
         {

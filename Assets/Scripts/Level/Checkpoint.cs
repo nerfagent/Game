@@ -4,7 +4,7 @@ using UnityEngine.Events;
 
 public class Checkpoint : MonoBehaviour
 {
-    [HideInInspector] public static UnityAction onCheckpointRest;
+    [HideInInspector] public static UnityAction onCheckpointRest = () => { };
 
     [Header("檢查點設定")]
     [SerializeField] private string checkpointID;  // 唯一識別碼

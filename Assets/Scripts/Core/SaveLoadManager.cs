@@ -7,9 +7,9 @@ using UnityEngine.Events;
 public class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager Instance { get; private set; }
-    public static UnityAction onLevelLoaded;
-    public static UnityAction onGameSaved;
-    public static UnityAction onGameLoaded;
+    public static UnityAction onLevelLoaded = () => { };
+    public static UnityAction onGameSaved = () => { };
+    public static UnityAction onGameLoaded = () => { };
 
     private string saveFilePath;
     private SaveData currentSaveData;

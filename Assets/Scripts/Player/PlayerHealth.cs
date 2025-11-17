@@ -10,8 +10,8 @@ public class PlayerHealth : MonoBehaviour
     public int MaxHP => maxHP;
     public int CurrentHP => currentHP;
 
-    public static UnityAction OnPlayerDamaged;
-    public static UnityAction OnPlayerDied;
+    public static UnityAction OnPlayerDamaged = () => { };
+    public static UnityAction OnPlayerDied = () => { };
     
     private void Start()
     {

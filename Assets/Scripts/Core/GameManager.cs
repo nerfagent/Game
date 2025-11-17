@@ -5,10 +5,10 @@ using UnityEngine.Events;
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
-    public static UnityAction onGameStart;
-    public static UnityAction onGameOver;
-    public static UnityAction onGamePaused;
-    public static UnityAction onGameResumed;
+    public static UnityAction onGameStart = () => { };
+    public static UnityAction onGameOver = () => { };
+    public static UnityAction onGamePaused = () => { };
+    public static UnityAction onGameResumed = () => { };
     public enum GameState { Menu, Playing, Paused, GameOver }
     public GameState CurrentState { get; private set; }
 

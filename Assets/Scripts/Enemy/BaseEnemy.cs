@@ -5,7 +5,7 @@ using UnityEngine.Events;
 
 public abstract class BaseEnemy : MonoBehaviour
 {
-    [HideInInspector] public static UnityAction OnEnemyDefeated;
+    [HideInInspector] public static UnityAction OnEnemyDefeated = () => { };
     
     [Header("基礎屬性")]
     [SerializeField] protected float maxHP = 50f;     // 最大生命值
