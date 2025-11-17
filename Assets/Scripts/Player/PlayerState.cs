@@ -1,5 +1,6 @@
 // Assets/Scripts/Level/Player/PlayerState.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PlayerState : MonoBehaviour
 {
@@ -15,12 +16,14 @@ public class PlayerState : MonoBehaviour
     public bool IsDead => currentState == State.Dead;
     public bool IsActionLocked => IsDashing || IsCasting || IsStunned || IsDead;
 
+    public static UnityAction<State> onPlayerStateChanged = s => { };
+
     public void SetState(State newState)
     {
         if (currentState == newState) return;
 
         currentState = newState;
-        EventManager.TriggerEvent($"OnPlayerState{newState}");
+        onPlayerStateChanged(newState);
     }
 
     public void ResetToIdle()

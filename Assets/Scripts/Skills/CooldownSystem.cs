@@ -1,5 +1,6 @@
 // Assets/Scripts/Level/Skills/CooldownSystem.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 public class CooldownSystem : MonoBehaviour
 {
@@ -7,6 +8,11 @@ public class CooldownSystem : MonoBehaviour
     private bool[] wasSkillReady = new bool[4];        // 用於追蹤技能源本是否可用，方便觸發事件
 
     public static CooldownSystem Instance { get; private set; }
+
+    // 技能冷卻事件 - 傳遞技能 ID
+    public static UnityAction<int> onSkillReady = id => { };           // 技能變為可用
+    public static UnityAction<int> onSkillOnCooldown = id => { };      // 技能進入冷卻
+    public static UnityAction<int> onSkillCooldownUpdated = id => { }; // 技能冷卻更新（每幀）
 
     private void Awake()
     {
@@ -38,7 +44,7 @@ public class CooldownSystem : MonoBehaviour
         for (int i = 0; i < skills.Length; i++)
         {
             wasSkillReady[i] = skills[i].IsReady;
-            EventManager.TriggerEvent($"OnSkill{i}CooldownUpdated");
+            onSkillCooldownUpdated.Invoke(i);
         }
     }
 
@@ -54,16 +60,16 @@ public class CooldownSystem : MonoBehaviour
             // 若技能從「冷卻中」轉為「可用」，觸發事件
             if (!wasReady && isReady)
             {
-                EventManager.TriggerEvent($"OnSkill{i}Ready");
+                onSkillReady.Invoke(i);
             }
             // 若從「可用」變為「冷卻中」
             else if (wasReady && !isReady)
             {
-                EventManager.TriggerEvent($"OnSkill{i}OnCooldown");
+                onSkillOnCooldown.Invoke(i);
             }
 
             wasSkillReady[i] = isReady;
-            EventManager.TriggerEvent($"OnSkill{i}CooldownUpdated"); // 持續同步 UI
+            onSkillCooldownUpdated.Invoke(i); // 持續同步 UI
         }
     }
 
@@ -146,7 +152,7 @@ public class CooldownSystem : MonoBehaviour
         {
             skills[i].ResetCooldown();
             wasSkillReady[i] = true;
-            EventManager.TriggerEvent($"OnSkill{i}Ready");
+            onSkillReady.Invoke(i);
         }
         Debug.Log("All skill cooldown pools reset to full");
     }

@@ -1,8 +1,10 @@
 // Assets/Scripts/Level/Player/PlayerController.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PlayerController : MonoBehaviour
 {
+
     [SerializeField] private PlayerMovement playerMovement;
     [SerializeField] private PlayerCombat playerCombat;
     [SerializeField] private PlayerState playerState;
@@ -23,16 +25,16 @@ public class PlayerController : MonoBehaviour
         }
 
         // Subscribe to game events
-        EventManager.StartListening("OnGameOver", OnGameOver);
-        EventManager.StartListening("OnGamePaused", OnGamePaused);
-        EventManager.StartListening("OnGameResumed", OnGameResumed);
+        GameManager.onGameOver += OnGameOver;
+        GameManager.onGamePaused += OnGamePaused;
+        GameManager.onGameResumed += OnGameResumed;
     }
 
     void OnDestroy()
     {
-        EventManager.StopListening("OnGameOver", OnGameOver);
-        EventManager.StopListening("OnGamePaused", OnGamePaused);
-        EventManager.StopListening("OnGameResumed", OnGameResumed);
+        GameManager.onGameOver -= OnGameOver;
+        GameManager.onGamePaused -= OnGamePaused;
+        GameManager.onGameResumed -= OnGameResumed;
     }
 
     private void OnGameOver()

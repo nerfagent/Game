@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Events;
 
 public class EnemyManager : MonoBehaviour
 {
@@ -31,15 +32,15 @@ public class EnemyManager : MonoBehaviour
     private void Start()
     {
         // 訂閱事件
-        EventManager.StartListening("OnLevelLoaded", OnLevelLoaded);
-        EventManager.StartListening("OnCheckpointRest", OnCheckpointRest);
+        SaveLoadManager.onLevelLoaded += OnLevelLoaded;
+        Checkpoint.onCheckpointRest += OnCheckpointRest;
     }
 
     private void OnDestroy()
     {
         // 取消訂閱事件
-        EventManager.StopListening("OnLevelLoaded", OnLevelLoaded);
-        EventManager.StopListening("OnCheckpointRest", OnCheckpointRest);
+        SaveLoadManager.onLevelLoaded -= OnLevelLoaded;
+        Checkpoint.onCheckpointRest -= OnCheckpointRest;
     }
 
     /// <summary>

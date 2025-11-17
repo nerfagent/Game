@@ -1,5 +1,6 @@
 // Assets/Scripts/Level/PersistentStateManager.cs
 using UnityEngine;
+using UnityEngine.Events;
 using System.Collections.Generic;
 
 public class PersistentStateManager : MonoBehaviour
@@ -11,6 +12,9 @@ public class PersistentStateManager : MonoBehaviour
     private Dictionary<string, int> integerStates = new Dictionary<string, int>();
     private Dictionary<string, float> floatStates = new Dictionary<string, float>();
     private Dictionary<string, string> stringStates = new Dictionary<string, string>();
+
+    // 狀態變更事件 - 傳遞 stateKey 參數
+    public static UnityAction<string> onStateChanged = key => { };
 
     private void Awake()
     {
@@ -32,7 +36,7 @@ public class PersistentStateManager : MonoBehaviour
     public void SetBoolState(string stateKey, bool value)
     {
         booleanStates[stateKey] = value;
-        EventManager.TriggerEvent($"OnStateChanged_{stateKey}");
+        onStateChanged.Invoke(stateKey);
         Debug.Log($"State '{stateKey}' set to {value}");
     }
 
@@ -50,7 +54,7 @@ public class PersistentStateManager : MonoBehaviour
     public void SetIntState(string stateKey, int value)
     {
         integerStates[stateKey] = value;
-        EventManager.TriggerEvent($"OnStateChanged_{stateKey}");
+        onStateChanged.Invoke(stateKey);
     }
 
     /// <summary>
@@ -70,7 +74,7 @@ public class PersistentStateManager : MonoBehaviour
             integerStates[stateKey] = 0;
         
         integerStates[stateKey] += increment;
-        EventManager.TriggerEvent($"OnStateChanged_{stateKey}");
+        onStateChanged.Invoke(stateKey);
     }
 
     /// <summary>
@@ -79,7 +83,7 @@ public class PersistentStateManager : MonoBehaviour
     public void SetFloatState(string stateKey, float value)
     {
         floatStates[stateKey] = value;
-        EventManager.TriggerEvent($"OnStateChanged_{stateKey}");
+        onStateChanged.Invoke(stateKey);
     }
 
     /// <summary>
@@ -96,7 +100,7 @@ public class PersistentStateManager : MonoBehaviour
     public void SetStringState(string stateKey, string value)
     {
         stringStates[stateKey] = value;
-        EventManager.TriggerEvent($"OnStateChanged_{stateKey}");
+        onStateChanged.Invoke(stateKey);
     }
 
     /// <summary>

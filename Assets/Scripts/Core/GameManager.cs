@@ -1,10 +1,14 @@
 // Assets/Scripts/Core/GameManager.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
-
+    public static UnityAction onGameStart = () => { };
+    public static UnityAction onGameOver = () => { };
+    public static UnityAction onGamePaused = () => { };
+    public static UnityAction onGameResumed = () => { };
     public enum GameState { Menu, Playing, Paused, GameOver }
     public GameState CurrentState { get; private set; }
 
@@ -30,7 +34,7 @@ public class GameManager : MonoBehaviour
     public void StartGame()
     {
         CurrentState = GameState.Playing;
-        EventManager.TriggerEvent("OnGameStarted");
+        onGameStart.Invoke();
     }
 
     public void PauseGame()
@@ -50,6 +54,6 @@ public class GameManager : MonoBehaviour
     public void GameOver()
     {
         CurrentState = GameState.GameOver;
-        EventManager.TriggerEvent("OnGameOver");
+        onGameOver.Invoke();
     }
 }

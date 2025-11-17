@@ -1,5 +1,6 @@
 // Assets/Scripts/Level/Player/PlayerHealth.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -8,6 +9,9 @@ public class PlayerHealth : MonoBehaviour
     
     public int MaxHP => maxHP;
     public int CurrentHP => currentHP;
+
+    public static UnityAction OnPlayerDamaged = () => { };
+    public static UnityAction OnPlayerDied = () => { };
     
     private void Start()
     {
@@ -30,7 +34,6 @@ public class PlayerHealth : MonoBehaviour
     {
         currentHP = maxHP;
         Debug.Log($"玩家血量已恢復: {currentHP}/{maxHP}");
-        EventManager.TriggerEvent("OnPlayerHealthRestored");
     }
     
     /// <summary>
@@ -41,7 +44,7 @@ public class PlayerHealth : MonoBehaviour
         currentHP -= damage;
         currentHP = Mathf.Max(0, currentHP);
         
-        EventManager.TriggerEvent("OnPlayerDamaged");
+        OnPlayerDamaged.Invoke();
         
         if (currentHP <= 0)
         {
@@ -54,7 +57,7 @@ public class PlayerHealth : MonoBehaviour
     /// </summary>
     private void Die()
     {
-        EventManager.TriggerEvent("OnPlayerDied");
+        OnPlayerDied.Invoke();
         GameManager.Instance.GameOver();
     }
 }

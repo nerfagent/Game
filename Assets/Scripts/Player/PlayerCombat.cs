@@ -180,7 +180,6 @@ public class PlayerCombat : MonoBehaviour
             else
             {
                 lockedEnemy = closestEnemy;
-                EventManager.TriggerEvent("OnEnemyLocked");
                 Debug.Log("Locked onto: " + lockedEnemy.name);
             }
         }
@@ -198,7 +197,6 @@ public class PlayerCombat : MonoBehaviour
         {
             Debug.Log("Lock cleared from: " + lockedEnemy.name);
             lockedEnemy = null;
-            EventManager.TriggerEvent("OnLockCleared");
         }
         if (currentLockOnIndicator != null)
         {
@@ -220,7 +218,6 @@ public class PlayerCombat : MonoBehaviour
         // 切換狀態為滑步中
         playerState.SetState(PlayerState.State.Dashing);
         dashTimer = dashDuration;
-        EventManager.TriggerEvent("OnDashStarted");
         Debug.Log("Dashing towards: " + lockedEnemy.name);
     }
 
@@ -235,8 +232,6 @@ public class PlayerCombat : MonoBehaviour
         {
             GameObject spawnedVFX = Instantiate(slashVFXPrefab, transform.position, transform.rotation);
         }
-
-        EventManager.TriggerEvent("OnDashEnded");
     }
 
     private bool IsTargetOnScreen(Transform target)

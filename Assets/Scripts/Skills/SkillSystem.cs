@@ -1,8 +1,10 @@
 // Assets/Scripts/Level/Skills/SkillSystem.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 public class SkillSystem : MonoBehaviour
 {
+    public static UnityAction[] onSkillCastComplete;
     private CooldownSystem cooldownSystem; // 冷卻系統實例
     private PlayerState playerState;       // 玩家當前狀態（用於防止重複施法）
     private Transform casterTransform;     // 玩家位置／施法基準
@@ -13,6 +15,14 @@ public class SkillSystem : MonoBehaviour
 
     private void Awake()
     {
+        if(onSkillCastComplete == null)
+        {
+            onSkillCastComplete = new UnityAction[4];
+            for(int i = 0; i < onSkillCastComplete.Length; i++)
+            {
+                onSkillCastComplete[i] = () => { };
+            }
+        }
         if (Instance == null)
         {
             Instance = this;
@@ -69,7 +79,7 @@ public class SkillSystem : MonoBehaviour
             currentCastingSkill = skillIndex;
 
             // 監聽該技能的施放完成事件
-            EventManager.StartListening($"OnSkill{skillIndex}CastComplete", OnCastComplete);
+            onSkillCastComplete[skillIndex] += OnCastComplete;
             return true;
         }
 
@@ -83,7 +93,7 @@ public class SkillSystem : MonoBehaviour
 
         if (currentCastingSkill >= 0)
         {
-            EventManager.StopListening($"OnSkill{currentCastingSkill}CastComplete", OnCastComplete);
+            onSkillCastComplete[currentCastingSkill] -= OnCastComplete;
         }
         currentCastingSkill = -1;
     }

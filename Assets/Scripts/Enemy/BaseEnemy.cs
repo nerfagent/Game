@@ -1,9 +1,12 @@
 // Assets/Scripts/Enemy/BaseEnemy.cs
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.Events;
 
 public abstract class BaseEnemy : MonoBehaviour
 {
+    [HideInInspector] public static UnityAction OnEnemyDefeated = () => { };
+    
     [Header("基礎屬性")]
     [SerializeField] protected float maxHP = 50f;     // 最大生命值
     protected float currentHP;                         // 當前生命值
@@ -330,8 +333,6 @@ public abstract class BaseEnemy : MonoBehaviour
         currentHP -= damage;
         currentHP = Mathf.Max(0, currentHP);
 
-        EventManager.TriggerEvent($"OnEnemy{enemyID}Damaged");
-
         Debug.Log($"{gameObject.name} 受到 {damage} 點傷害。血量: {currentHP}/{maxHP}");
 
         if (currentHP <= 0)
@@ -365,9 +366,8 @@ public abstract class BaseEnemy : MonoBehaviour
             // 同時記錄到 EnemyManager 的列表中以供存檔
             EnemyManager.Instance.RecordBossDefeated(uniqueID);
         }
-
-        EventManager.TriggerEvent($"OnEnemy{GetInstanceID()}Died");
-        EventManager.TriggerEvent("OnEnemyDefeated");
+        
+        OnEnemyDefeated.Invoke();
 
         Debug.Log($"{gameObject.name} ({uniqueID}) 已被擊敗！狀態已記錄。");
         
