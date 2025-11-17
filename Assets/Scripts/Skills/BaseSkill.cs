@@ -1,5 +1,6 @@
 // Assets/Scripts/Level/Skills/BaseSkill.cs
 using UnityEngine;
+using UnityEngine.Events;
 
 [System.Serializable]
 public abstract class BaseSkill
@@ -29,6 +30,9 @@ public abstract class BaseSkill
     public virtual bool IsReady => currentCooldownPool >= CooldownCostPerCast && !isCasting;
     public virtual int AvailableCasts => Mathf.FloorToInt(currentCooldownPool / CooldownCostPerCast);
 
+    // 技能施放事件 - 傳遞技能 ID
+    public static UnityAction<int> onSkillCast = id => { };
+
     public BaseSkill()
     {
         currentCooldownPool = maxCooldownPool;
@@ -53,7 +57,7 @@ public abstract class BaseSkill
         isCasting = true;
         castTimer = CastTime;
 
-        EventManager.TriggerEvent($"OnSkill{skillId}Cast");
+        onSkillCast.Invoke(skillId);
         Debug.Log($"Casting {skillName}. Pool: {CurrentCooldownPool}/{MaxCooldownPool}");
     }
 

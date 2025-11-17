@@ -1,11 +1,24 @@
 // Assets/Scripts/Level/InteractiveObject.cs
 using UnityEngine;
+using UnityEngine.Events;
+using System.Collections.Generic;
 
 public abstract class InteractiveObject : MonoBehaviour
 {
     [SerializeField] protected string stateKey;  // 唯一狀態鍵
     [SerializeField] protected Collider objectCollider;
     protected PersistentStateManager persistentState;
+
+    // 為每個物件實例存儲其特定的事件
+    public UnityAction onObjectActivated;
+    public UnityAction onObjectDeactivated;
+
+    protected virtual void Awake()
+    {
+        // 初始化 UnityAction
+        onObjectActivated = new UnityAction(() => { });
+        onObjectDeactivated = new UnityAction(() => { });
+    }
 
     protected virtual void Start()
     {
@@ -24,7 +37,7 @@ public abstract class InteractiveObject : MonoBehaviour
     {
         persistentState.SetBoolState(stateKey, true);
         OnStateChanged(true);
-        EventManager.TriggerEvent($"OnObject{gameObject.name}Activated");
+        onObjectActivated.Invoke();
         Debug.Log($"{gameObject.name} 已啟用");
     }
 
@@ -35,7 +48,7 @@ public abstract class InteractiveObject : MonoBehaviour
     {
         persistentState.SetBoolState(stateKey, false);
         OnStateChanged(false);
-        EventManager.TriggerEvent($"OnObject{gameObject.name}Deactivated");
+        onObjectDeactivated.Invoke();
     }
 
     /// <summary>

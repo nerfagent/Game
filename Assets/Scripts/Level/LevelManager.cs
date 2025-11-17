@@ -1,6 +1,7 @@
 // Assets/Scripts/Level/LevelManager.cs
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Events;
 using System.Collections;
 
 public class LevelManager : MonoBehaviour
@@ -21,6 +22,9 @@ public class LevelManager : MonoBehaviour
     
     private Scene currentLevelScene;                   // 當前關卡場景
 
+    // 關卡加載事件 - 當任何關卡加載時觸發，傳遞關卡名稱
+    public static UnityAction<string> onLevelLoaded;
+
     private void Awake()
     {
         // 單例模式：確保全遊戲僅有一個 LevelManager
@@ -28,6 +32,12 @@ public class LevelManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);  // 切換關卡時不銷毀此物件
+            
+            // 初始化事件
+            if (onLevelLoaded == null)
+            {
+                onLevelLoaded = new UnityAction<string>((levelName) => { });
+            }
         }
         else
         {
@@ -118,7 +128,7 @@ public class LevelManager : MonoBehaviour
 
         // 第 7 步：觸發完成事件
         SaveLoadManager.onLevelLoaded.Invoke();
-        EventManager.TriggerEvent($"OnLevel{levelName}Loaded");
+        onLevelLoaded.Invoke(levelName);  // 傳遞關卡名稱
 
         isTransitioning = false;
         Debug.Log($"關卡轉移完成: {levelName}");
