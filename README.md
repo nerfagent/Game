@@ -48,6 +48,8 @@ Assets/
 │   │   ├── InteractiveObject.cs
 │   │   ├── LevelExit.cs
 │   │   └── TransitionController.cs
+│   ├── UI/
+│   │   └── SkillTree.cs
 │   └── Data/
 │       └── SaveData.cs
 ├── Scenes/
@@ -65,10 +67,10 @@ Assets/
 
 ```
 Scenes In Build:
-[0] Assets/Scenes/Bootstrap.unity      (無需任何指令碼)
-[1] Assets/Scenes/Persistent.unity     (包含所有核心管理器)
-[2] Assets/Scenes/Level_MainHall.unity (可卸載關卡)
-[3] Assets/Scenes/Level_TreasureRoom.unity (可卸載關卡)
+Assets/Scenes/Bootstrap.unity      (無需任何指令碼)
+Assets/Scenes/Persistent.unity     (包含所有核心管理器)
+Assets/Scenes/Level_MainHall.unity (可卸載關卡)
+Assets/Scenes/Level_TreasureRoom.unity (可卸載關卡)
 ... (添加更多關卡)
 ```
 
@@ -87,6 +89,23 @@ GameManager manager = GameManager.Instance;
 // 查詢當前遊戲狀態
 GameManager.GameState state = GameManager.Instance.CurrentState;
 
+// 訂閱遊戲事件
+private void OnEnable()
+{
+GameManager.onGameStart += HandleGameStart;
+GameManager.onGameOver += HandleGameOver;
+GameManager.onGamePaused += HandleGamePaused;
+GameManager.onGameResumed += HandleGameResumed;
+}
+
+private void OnDisable()
+{
+GameManager.onGameStart -= HandleGameStart;
+GameManager.onGameOver -= HandleGameOver;
+GameManager.onGamePaused -= HandleGamePaused;
+GameManager.onGameResumed -= HandleGameResumed;
+}
+
 // 開始遊戲
 GameManager.Instance.StartGame();
 
@@ -103,7 +122,7 @@ GameManager.Instance.GameOver();
 **核心特性：**
 - 使用 `DontDestroyOnLoad()` 確保跨場景持續存在
 - 遊戲狀態：`Menu`、`Playing`、`Paused`、`GameOver`
-- 發送事件：`OnGameStarted`、`OnGamePaused`、`OnGameResumed`、`OnGameOver`
+- 公開事件：`onGameStart`、`onGamePaused`、`onGameResumed`、`onGameOver`
 
 ---
 
@@ -117,57 +136,32 @@ GameManager.Instance.GameOver();
 // 訂閱事件
 private void OnEnable()
 {
-    EventManager.StartListening("OnGameStarted", HandleGameStarted);
-    EventManager.StartListening("OnGameOver", HandleGameOver);
+EventManager.StartListening("OnGameStarted", HandleGameStarted);
+EventManager.StartListening("OnGameOver", HandleGameOver);
 }
 
 // 取消訂閱事件
 private void OnDisable()
 {
-    EventManager.StopListening("OnGameStarted", HandleGameStarted);
-    EventManager.StopListening("OnGameOver", HandleGameOver);
+EventManager.StopListening("OnGameStarted", HandleGameStarted);
+EventManager.StopListening("OnGameOver", HandleGameOver);
 }
 
 // 事件處理函式
 private void HandleGameStarted()
 {
-    Debug.Log("遊戲開始！");
+Debug.Log("遊戲開始！");
 }
 
 private void HandleGameOver()
 {
-    Debug.Log("遊戲結束！");
+Debug.Log("遊戲結束！");
 }
 
 // 觸發事件
 EventManager.TriggerEvent("OnGameStarted");
 EventManager.TriggerEvent("OnGameOver");
 ```
-
-**常見事件列表：**
-
-**遊戲狀態事件：**
-- `OnGameStarted` - 遊戲開始
-- `OnGamePaused` - 遊戲暫停
-- `OnGameResumed` - 遊戲繼續
-- `OnGameOver` - 遊戲結束
-
-**玩家移動事件：**
-- `OnPlayerStateMoving` - 玩家移動
-- `OnPlayerStateIdle` - 玩家待機
-
-**戰鬥事件：**
-- `OnEnemyLocked` - 鎖定敵人
-- `OnLockCleared` - 解除鎖定
-- `OnDashStarted` - 開始衝刺
-- `OnDashEnded` - 衝刺結束
-
-**技能事件：**
-- `OnSkill{skillIndex}Cast` - 技能開始施放
-- `OnSkill{skillIndex}CastComplete` - 技能施放完成
-- `OnSkill{skillIndex}Ready` - 技能冷卻完成
-- `OnSkill{skillIndex}OnCooldown` - 技能進入冷卻
-- `OnSkill{skillIndex}CooldownUpdated` - 技能冷卻更新
 
 ---
 
@@ -217,6 +211,11 @@ if (InputManager.GetPauseInput())
 public class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager Instance { get; private set; }
+
+    // 靜態事件
+    public static UnityAction onLevelLoaded;
+    public static UnityAction onGameSaved;
+    public static UnityAction onGameLoaded;
     
     // 保存遊戲
     public void SaveGame(string checkpointID, string sceneName, Vector3 spawnPosition);
@@ -245,6 +244,11 @@ public class SaveLoadManager : MonoBehaviour
 **使用方式：**
 
 ```csharp
+// 訂閱存檔事件
+SaveLoadManager.onGameSaved += HandleGameSaved;
+SaveLoadManager.onGameLoaded += HandleGameLoaded;
+SaveLoadManager.onLevelLoaded += HandleLevelLoaded;
+
 // 在檢查點保存遊戲
 SaveLoadManager.Instance.SaveGame("CheckpointA", "Level_MainHall", playerPosition);
 
@@ -272,8 +276,11 @@ SaveLoadManager.Instance.LoadGameAndRestore();
 public class PlayerState : MonoBehaviour
 {
     public enum State { Idle, Moving, Dashing, CastingSkill, Stunned, Dead }
-    
+
     public State CurrentState { get; }
+    
+    // 靜態事件
+    public static UnityAction<State> onPlayerStateChanged;
     
     // 便利屬性
     public bool IsMoving { get; }
@@ -289,6 +296,14 @@ public class PlayerState : MonoBehaviour
 
 // 使用
 PlayerState playerState = GetComponent<PlayerState>();
+
+// 訂閱狀態變更事件
+PlayerState.onPlayerStateChanged += HandleStateChanged;
+
+void HandleStateChanged(PlayerState.State newState)
+{
+    Debug.Log(\$"玩家狀態變更為: {newState}");
+}
 
 if (playerState.IsActionLocked)
 {
@@ -324,7 +339,7 @@ playerMovement.ResetVerticalVelocity(); // 在衝刺結束後重置垂直速度
 public class PlayerCombat : MonoBehaviour
 {
     public bool IsLockedOn { get; }
-    
+
     [Header("Lock-On Settings")]
     public GameObject lockOnIndicatorPrefab;
     public float lockOnRange = 25f;
@@ -349,12 +364,6 @@ if (playerCombat.IsLockedOn)
 }
 ```
 
-**觸發的事件：**
-- `OnEnemyLocked` - 成功鎖定敵人
-- `OnLockCleared` - 解除鎖定
-- `OnDashStarted` - 衝刺開始
-- `OnDashEnded` - 衝刺結束
-
 ---
 
 ## PlayerHealth：玩家生命值管理
@@ -368,6 +377,10 @@ public class PlayerHealth : MonoBehaviour
 {
     public int MaxHP { get; }
     public int CurrentHP { get; }
+
+    // 靜態事件
+    public static UnityAction OnPlayerDamaged;
+    public static UnityAction OnPlayerDied;
     
     // 受傷
     public void TakeDamage(int damage);
@@ -380,14 +393,12 @@ public class PlayerHealth : MonoBehaviour
 }
 
 // 使用
+PlayerHealth.OnPlayerDamaged += HandlePlayerDamaged;
+PlayerHealth.OnPlayerDied += HandlePlayerDied;
+
 playerHealth.TakeDamage(10);
 playerHealth.RestoreToFull();
 ```
-
-**觸發的事件：**
-- `OnPlayerHealthRestored` - 血量恢復
-- `OnPlayerDamaged` - 受傷
-- `OnPlayerDied` - 死亡
 
 ---
 
@@ -402,7 +413,7 @@ public class SlashVFXHandler : MonoBehaviour
 {
     [Header("Attack Settings")]
     public int damage = 25;                // 造成的傷害值
-    
+
     [Header("VFX Settings")]
     public LayerMask enemyLayer;           // 敵人圖層
     public GameObject impactVFXPrefab;     // 衝擊特效
@@ -474,6 +485,9 @@ Dead: 任何狀態都可能轉移至此（當生命值 ≤ 0）
 ```csharp
 public abstract class BaseEnemy : MonoBehaviour
 {
+    // 靜態事件
+    public static UnityAction OnEnemyDefeated;
+
     [Header("基礎屬性")]
     public float maxHP = 50f;                  // 最大生命值
     public float CurrentHP { get; }            // 當前生命值
@@ -571,6 +585,9 @@ public void AssignUniqueID(string id);
 **使用方式：**
 
 ```csharp
+// 訂閱敵人擊敗事件
+BaseEnemy.OnEnemyDefeated += HandleEnemyDefeated;
+
 // 派生類實例
 public class BulletHellEnemy : BaseEnemy
 {
@@ -578,7 +595,7 @@ public class BulletHellEnemy : BaseEnemy
     {
         // 在此實作具體的彈幕發射邏輯
     }
-    
+
     protected override bool IsSpellCardFinished()
     {
         return bulletsFired >= maxBullets;
@@ -588,11 +605,6 @@ public class BulletHellEnemy : BaseEnemy
 // 外部傷害敵人
 enemy.TakeDamage(10f);
 ```
-
-**觸發的事件：**
-- `OnEnemy{enemyID}Damaged` - 敵人受傷時
-- `OnEnemy{enemyID}Died` - 敵人死亡時
-- `OnEnemyDefeated` - 任何敵人死亡時
 
 ---
 
@@ -611,7 +623,7 @@ enemy.TakeDamage(10f);
 public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager Instance { get; }
-    
+
     // Spawner 註冊/反註冊
     public void RegisterSpawner(EnemySpawner spawner);        // 在 Spawner.Start() 中調用
     public void UnregisterSpawner(EnemySpawner spawner);      // 在 Spawner.OnDestroy() 中調用
@@ -646,7 +658,7 @@ EnemySpawner.Start()
     ↓
 EnemyManager 將 Spawner 按場景分類存儲
     ↓
-LevelManager 加載完場景，觸發 OnLevelLoaded 事件
+LevelManager 加載完場景，觸發 SaveLoadManager.onLevelLoaded 事件
     ↓
 EnemyManager.ProcessSpawnsForLevel()
     ├─ 遍歷該場景的所有已註冊 Spawner
@@ -655,7 +667,7 @@ EnemyManager.ProcessSpawnsForLevel()
     │   └─ Boss：檢查 PersistentStateManager
     ├─ 未死亡 → 命令 Spawner.SpawnEnemy()
     └─ 已死亡 → 不生成
-    
+
 敵人被擊敗
     ↓
 敵人.Die()
@@ -666,7 +678,7 @@ EnemyManager.ProcessSpawnsForLevel()
     ↓
 Checkpoint.ActivateCheckpoint()
     ↓
-EventManager.TriggerEvent("OnCheckpointRest")
+Checkpoint.onCheckpointRest.Invoke()
     ↓
 EnemyManager.OnCheckpointRest()
     ├─ 遍歷當前場景的 Spawner
@@ -707,7 +719,7 @@ SaveLoadManager.ApplySaveData()
 
 ```csharp
 // 不需要外部直接呼叫大多數方法
-// EnemyManager 自動監聽 OnLevelLoaded 和 OnCheckpointRest 事件
+// EnemyManager 自動監聽 SaveLoadManager.onLevelLoaded 和 Checkpoint.onCheckpointRest 事件
 
 // 如果需要手動查詢已擊敗的 Boss（存檔系統調用）
 List<string> defeatedBosses = EnemyManager.Instance.GetDefeatedBossList();
@@ -982,15 +994,37 @@ Level2 (Index 3) - 可卸載
 **責任：** 追蹤整個遊戲世界的永久改變
 
 ```csharp
-// 布林狀態（門是否開啟）
+public class PersistentStateManager : MonoBehaviour
+{
+    // 靜態事件
+    public static UnityAction<string> onStateChanged;
+
+    // 布林狀態（門是否開啟）
+    public void SetBoolState(string stateKey, bool value);
+    public bool GetBoolState(string stateKey, bool defaultValue = false);
+    
+    // 整數狀態（敵人數量）
+    public void SetIntState(string stateKey, int value);
+    public int GetIntState(string stateKey, int defaultValue = 0);
+    public void IncrementIntState(string stateKey, int increment = 1);
+    
+    // 浮點數和字串狀態類似
+    public void SetFloatState(string stateKey, float value);
+    public float GetFloatState(string stateKey, float defaultValue = 0f);
+    public void SetStringState(string stateKey, string value);
+    public string GetStringState(string stateKey, string defaultValue = "");
+}
+
+// 使用
+PersistentStateManager.onStateChanged += HandleStateChanged;
+
+void HandleStateChanged(string stateKey)
+{
+    Debug.Log(\$"狀態變更: {stateKey}");
+}
+
 PersistentStateManager.Instance.SetBoolState("Door_MainHall_Opened", true);
 bool isOpen = PersistentStateManager.Instance.GetBoolState("Door_MainHall_Opened");
-
-// 整數狀態（敵人數量）
-PersistentStateManager.Instance.IncrementIntState("EnemiesDefeated");
-int count = PersistentStateManager.Instance.GetIntState("EnemiesDefeated");
-
-// 浮點數和字串狀態類似
 ```
 
 **狀態鍵命名約定：**
@@ -1010,18 +1044,31 @@ int count = PersistentStateManager.Instance.GetIntState("EnemiesDefeated");
 **責任：** 管理場景加載/卸載、玩家位置、敵人重生協調
 
 ```csharp
-// 轉移至新關卡
+public class LevelManager : MonoBehaviour
+{
+    // 靜態事件
+    public static UnityAction<string> onLevelLoaded;
+
+    // 轉移至新關卡
+    public void TransitionToLevel(string levelName, Vector3 spawnPosition);
+    
+    // 查詢當前關卡
+    public string GetCurrentLevelName();
+    
+    // 檢查是否正在轉換
+    public bool IsTransitioning();
+}
+
+// 使用
+LevelManager.onLevelLoaded += HandleLevelLoaded;
+
+void HandleLevelLoaded(string levelName)
+{
+    bug.Log(\$"關卡已加載: {levelName}");
+}
+
 Vector3 spawnPosition = new Vector3(5, 1, 0);
 LevelManager.Instance.TransitionToLevel("Level_TreasureRoom", spawnPosition);
-
-// 查詢當前關卡
-string currentLevel = LevelManager.Instance.GetCurrentLevelName();
-
-// 檢查是否正在轉換
-if (LevelManager.Instance.IsTransitioning())
-{
-    // 禁止重複轉換
-}
 ```
 
 **場景轉換流程：**
@@ -1041,7 +1088,7 @@ if (LevelManager.Instance.IsTransitioning())
     ↓
 禁用 CharacterController → 設定玩家位置 → 重新啟用
     ↓
-觸發 OnLevelLoaded 事件
+觸發 SaveLoadManager.onLevelLoaded 和 LevelManager.onLevelLoaded 事件
     ↓
 EnemyManager 自動監聽並調用 ProcessSpawnsForLevel()
     ├─ 根據死亡記錄決定敵人是否生成
@@ -1059,10 +1106,16 @@ EnemyManager 自動監聽並調用 ProcessSpawnsForLevel()
 ```csharp
 public class Checkpoint : MonoBehaviour
 {
+    // 靜態事件
+    public static UnityAction onCheckpointRest;
+
     [SerializeField] private string checkpointID;
     [SerializeField] private string checkpointSceneName;
     [SerializeField] private Vector3 playerSpawnPosition;
 }
+
+// 使用
+Checkpoint.onCheckpointRest += HandleCheckpointRest;
 
 // 玩家按 F 鍵激活檢查點
 ```
@@ -1076,7 +1129,7 @@ public class Checkpoint : MonoBehaviour
     ├─ 補滿玩家血量
     ├─ 重置技能冷卻
     ├─ 保存遊戲 (SaveLoadManager.SaveGame())
-    └─ 觸發 OnCheckpointRest 事件
+    └─ 觸發 Checkpoint.onCheckpointRest 事件
         ↓
         EnemyManager.OnCheckpointRest()
         ├─ 遍歷當前場景的 Spawner
@@ -1093,6 +1146,10 @@ public class Checkpoint : MonoBehaviour
 ```csharp
 public abstract class InteractiveObject : MonoBehaviour
 {
+    // 實例事件
+    public UnityAction onObjectActivated;
+    public UnityAction onObjectDeactivated;
+
     protected string stateKey;
     
     public virtual void Activate();
@@ -1100,6 +1157,10 @@ public abstract class InteractiveObject : MonoBehaviour
     public virtual void RestoreState();
     protected abstract void OnStateChanged(bool isActive);
 }
+
+// 使用
+interactiveObject.onObjectActivated += HandleObjectActivated;
+interactiveObject.onObjectDeactivated += HandleObjectDeactivated;
 ```
 
 ---
@@ -1178,6 +1239,9 @@ t=0.3~10.3s: 恢復階段 (池: 0 → 10，可再施放1次)
 ```csharp
 public abstract class BaseSkill
 {
+    // 靜態事件
+    public static UnityAction<int> onSkillCast;
+
     // 技能標識
     public int SkillId { get; }
     public string SkillName { get; }
@@ -1202,6 +1266,14 @@ public abstract class BaseSkill
     public virtual void OnCastComplete();
     public virtual void ResetCooldown();
     public float GetPoolPercentage();
+    }
+
+// 使用
+BaseSkill.onSkillCast += HandleSkillCast;
+
+void HandleSkillCast(int skillId)
+{
+    Debug.Log(\$"技能 {skillId} 已施放");
 }
 ```
 
@@ -1235,6 +1307,11 @@ CooldownSystem.Instance.ReplaceSkill(0, upgradedSkill);
 public class CooldownSystem : MonoBehaviour
 {
     public static CooldownSystem Instance { get; }
+
+    // 靜態事件
+    public static UnityAction<int> onSkillReady;
+    public static UnityAction<int> onSkillOnCooldown;
+    public static UnityAction<int> onSkillCooldownUpdated;
     
     public bool CastSkill(int skillIndex, Transform casterTransform);
     public float GetCooldownNormalized(int skillIndex);
@@ -1243,6 +1320,16 @@ public class CooldownSystem : MonoBehaviour
     public void ResetAllCooldowns();
     public BaseSkill GetSkill(int skillIndex);
     public void ReplaceSkill(int skillIndex, BaseSkill newSkill);
+}
+
+// 使用
+CooldownSystem.onSkillReady += HandleSkillReady;
+CooldownSystem.onSkillOnCooldown += HandleSkillOnCooldown;
+CooldownSystem.onSkillCooldownUpdated += HandleSkillCooldownUpdated;
+
+void HandleSkillReady(int skillId)
+{
+    bug.Log(\$"技能 {skillId} 已就緒");
 }
 ```
 
@@ -1255,10 +1342,20 @@ public class CooldownSystem : MonoBehaviour
 ```csharp
 public class SkillSystem : MonoBehaviour
 {
+    lic static UnityAction[] onSkillCastComplete;
+
     public bool AttemptCastSkill(int skillIndex);
     public float GetSkillCooldownNormalized(int skillIndex);
     public int GetSkillAvailableCasts(int skillIndex);
     public bool IsSkillReady(int skillIndex);
+}
+
+// 使用
+SkillSystem.onSkillCastComplete += HandleSkill0CastComplete;
+
+void HandleSkill0CastComplete()
+{
+    Debug.Log("技能 0 施放完成");
 }
 ```
 
@@ -1289,7 +1386,7 @@ if (PauseManager.Instance.IsPaused)
 **核心特性：**
 - ESC 鍵自動切換暫停狀態
 - `Time.timeScale` 控制遊戲時間
-- 觸發事件 `OnGamePaused` 和 `OnGameResumed`
+- 訂閱 `GameManager.onGamePaused` 和 `GameManager.onGameResumed` 事件
 - 與 `GameManager` 集成
 
 ---
