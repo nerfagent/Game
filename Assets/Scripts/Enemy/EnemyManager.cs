@@ -34,8 +34,6 @@ public class EnemyManager : MonoBehaviour
         // 訂閱事件
         SaveLoadManager.onLevelLoaded += OnLevelLoaded;
         Checkpoint.onCheckpointRest += OnCheckpointRest;
-        //EventManager.StartListening("OnLevelLoaded", OnLevelLoaded);
-        //EventManager.StartListening("OnCheckpointRest", OnCheckpointRest);
     }
 
     private void OnDestroy()
@@ -43,8 +41,6 @@ public class EnemyManager : MonoBehaviour
         // 取消訂閱事件
         SaveLoadManager.onLevelLoaded -= OnLevelLoaded;
         Checkpoint.onCheckpointRest -= OnCheckpointRest;
-        //EventManager.StopListening("OnLevelLoaded", OnLevelLoaded);
-        //EventManager.StopListening("OnCheckpointRest", OnCheckpointRest);
     }
 
     /// <summary>

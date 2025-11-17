@@ -81,7 +81,6 @@ public abstract class BaseSkill
     public virtual void OnCastComplete()
     {
         isCasting = false;
-        //EventManager.TriggerEvent($"OnSkill{skillId}CastComplete");
         SkillSystem.onSkillCastComplete[skillId].Invoke();
         Debug.Log($"{skillName} cast complete");
     }

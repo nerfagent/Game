@@ -28,19 +28,13 @@ public class PlayerController : MonoBehaviour
         GameManager.onGameOver += OnGameOver;
         GameManager.onGamePaused += OnGamePaused;
         GameManager.onGameResumed += OnGameResumed;
-        //EventManager.StartListening("OnGameOver", OnGameOver);
-        //EventManager.StartListening("OnGamePaused", OnGamePaused);
-        //EventManager.StartListening("OnGameResumed", OnGameResumed);
     }
 
     void OnDestroy()
     {
         GameManager.onGameOver -= OnGameOver;
         GameManager.onGamePaused -= OnGamePaused;
-        GameManager.onGameResumed += OnGameResumed;
-        //EventManager.StopListening("OnGameOver", OnGameOver);
-        //EventManager.StopListening("OnGamePaused", OnGamePaused);
-        //EventManager.StopListening("OnGameResumed", OnGameResumed);
+        GameManager.onGameResumed -= OnGameResumed;
     }
 
     private void OnGameOver()

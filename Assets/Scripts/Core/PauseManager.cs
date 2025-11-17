@@ -27,8 +27,6 @@ public class PauseManager : MonoBehaviour
         // Subscribe to game events
         GameManager.onGamePaused += OnGamePausedEvent;
         GameManager.onGameResumed += OnGameResumedEvent;
-        //EventManager.StartListening("OnGamePaused", OnGamePausedEvent);
-        //EventManager.StartListening("OnGameResumed", OnGameResumedEvent);
     }
 
 
@@ -36,8 +34,6 @@ public class PauseManager : MonoBehaviour
     {
         GameManager.onGamePaused -= OnGamePausedEvent;
         GameManager.onGameResumed -= OnGameResumedEvent;
-        //EventManager.StopListening("OnGamePaused", OnGamePausedEvent);
-        //EventManager.StopListening("OnGameResumed", OnGameResumedEvent);
     }
     
     private void OnGamePausedEvent()
@@ -77,7 +73,6 @@ public class PauseManager : MonoBehaviour
         
         isPaused = true;
         Time.timeScale = 0f;
-        //EventManager.TriggerEvent("OnGamePaused");
         GameManager.onGamePaused.Invoke();
         Debug.Log("Game paused");
     }
@@ -92,7 +87,6 @@ public class PauseManager : MonoBehaviour
         
         isPaused = false;
         Time.timeScale = 1f;
-        //EventManager.TriggerEvent("OnGameResumed");
         GameManager.onGameResumed.Invoke();
         Debug.Log("Game resumed");
     }

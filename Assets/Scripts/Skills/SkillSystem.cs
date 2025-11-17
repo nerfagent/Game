@@ -76,7 +76,6 @@ public class SkillSystem : MonoBehaviour
 
             // 監聽該技能的施放完成事件
             onSkillCastComplete[skillIndex] += OnCastComplete;
-            //EventManager.StartListening($"OnSkill{skillIndex}CastComplete", OnCastComplete);
             return true;
         }
 
@@ -91,7 +90,6 @@ public class SkillSystem : MonoBehaviour
         if (currentCastingSkill >= 0)
         {
             onSkillCastComplete[currentCastingSkill] -= OnCastComplete;
-            //EventManager.StopListening($"OnSkill{currentCastingSkill}CastComplete", OnCastComplete);
         }
         currentCastingSkill = -1;
     }

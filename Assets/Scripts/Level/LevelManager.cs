@@ -75,7 +75,6 @@ public class LevelManager : MonoBehaviour
     private IEnumerator TransitionCoroutine(string levelName, Vector3 spawnPosition)
     {
         isTransitioning = true;
-        EventManager.TriggerEvent("OnLevelTransitionStart");  // 觸發轉移開始事件
 
         yield return new WaitForSeconds(1f);
 
@@ -118,7 +117,6 @@ public class LevelManager : MonoBehaviour
         }
 
         // 第 7 步：觸發完成事件
-        //EventManager.TriggerEvent("OnLevelLoaded");
         SaveLoadManager.onLevelLoaded.Invoke();
         EventManager.TriggerEvent($"OnLevel{levelName}Loaded");
 

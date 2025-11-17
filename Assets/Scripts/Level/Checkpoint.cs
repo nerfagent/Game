@@ -87,8 +87,6 @@ public class Checkpoint : MonoBehaviour
         }
         
         // 觸發事件
-        EventManager.TriggerEvent("OnCheckpointActivated");
-        //EventManager.TriggerEvent("OnCheckpointRest");  // 重生敵人事件
         onCheckpointRest.Invoke();
         
         if (showDebugInfo)

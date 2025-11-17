@@ -8,6 +8,9 @@ public class SaveLoadManager : MonoBehaviour
 {
     public static SaveLoadManager Instance { get; private set; }
     public static UnityAction onLevelLoaded;
+    public static UnityAction onGameSaved;
+    public static UnityAction onGameLoaded;
+
     private string saveFilePath;
     private SaveData currentSaveData;
     private bool isLoadingFromSave = false;  // 標記是否正在從存檔讀取
@@ -32,13 +35,11 @@ public class SaveLoadManager : MonoBehaviour
     private void Start()
     {
         // 訂閱關卡加載完成事件
-        //EventManager.StartListening("OnLevelLoaded", OnLevelLoadedAfterLoad);
         onLevelLoaded += OnLevelLoadedAfterLoad;
     }
     
     private void OnDestroy()
     {
-        //EventManager.StopListening("OnLevelLoaded", OnLevelLoadedAfterLoad);
         onLevelLoaded -= OnLevelLoadedAfterLoad;
     }
     
@@ -110,7 +111,7 @@ public class SaveLoadManager : MonoBehaviour
         currentSaveData = data;
         
         Debug.Log($"遊戲已保存 - 檢查點: {checkpointID}, 場景: {sceneName}, 位置: {spawnPosition}");
-        EventManager.TriggerEvent("OnGameSaved");
+        onGameSaved.Invoke();
     }
     
     /// <summary>
@@ -267,7 +268,7 @@ public class SaveLoadManager : MonoBehaviour
         }
         
         Debug.Log("存檔數據已完全應用");
-        EventManager.TriggerEvent("OnGameLoaded");
+        onGameLoaded.Invoke();
     }
     
     /// <summary>
