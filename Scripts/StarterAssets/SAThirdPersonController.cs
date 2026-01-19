@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.Animations;
 using System.Collections.Generic;
-#if ENABLE_INPUT_SYSTEM 
+// using System.Diagnostics;
+// using System.Numerics;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
@@ -10,13 +12,16 @@ using UnityEngine.InputSystem;
 
 // namespace StarterAssets
 // {
-    [RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(CharacterController))]
 #if ENABLE_INPUT_SYSTEM 
     [RequireComponent(typeof(PlayerInput))]
 #endif
     public class SAThirdPersonController : MonoBehaviour
     {
         [Header("Player")]
+        [Tooltip("Walk speed of the character in m/s")]
+        public float WalkSpeed = 1.5f;
+
         [Tooltip("Move speed of the character in m/s")]
         public float MoveSpeed = 3.5f;
 
@@ -24,7 +29,7 @@ using UnityEngine.InputSystem;
         public float SprintSpeed = 6.5f;
 
         [Tooltip("Rolling speed of the character in m/s")]
-        public float RollSpeed = 5.5f;
+        public float RollSpeed = 3.5f;
 
         [Tooltip("How fast the character turns to face movement direction")]
         [Range(0.0f, 0.3f)]
@@ -45,25 +50,51 @@ using UnityEngine.InputSystem;
         public float Gravity = -15.0f;
 
         [Space(10)]
-        [Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
-        public float JumpTimeout = 0.50f;
-
-        [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
-        public float FallTimeout = 0.15f;
-
-        // new action variables
         // Timeout unit in seconds // all animations should be 60fps
-        [Tooltip("Time required to pass before being able to attack again. Set to 0f to instantly attack again")]
-        public float AttackTimeout = 1.00f; // attack ended at 65th frame
-
-        [Tooltip("Time required to pass before being able to attack again. Set to 0f to instantly attack again")]
-        public float AirAttackTimeout = 0.7f; // attack ended at 42nd frame
+        [Tooltip("Time required to pass before being able to dodge again. Set to 0f to instantly dodge again")]
+        public float DodgeTimeout = 0.70f; // dodge ended at 42nd frame
 
         [Tooltip("Time required to pass before being able to heal again. Set to 0f to instantly heal again")]
         public float HealTimeout = 1.4f; // heal ended at 100th frame
 
-        [Tooltip("Time required to pass before being able to dodge again. Set to 0f to instantly dodge again")]
-        public float DodgeTimeout = 0.70f; // dodge ended at 42nd frame
+        [Tooltip("Time required to pass before being able to attack again. Set to 0f to instantly attack again")]
+        public float AttackTimeout = 1.00f; // attack ended at 65th frame
+
+        [Tooltip("Time required to pass before being able to attack again. Set to 0f to instantly attack again")]
+        public float FallAttackTimeout = 0.7f; // attack ended at 42nd frame
+
+        [Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
+        public float JumpTimeout = 1.00f;
+
+        [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
+        public float FallTimeout = 0.15f;
+
+        // [Tooltip("Time required to pass before being able to skillR again. Set to 0f to instantly skillR again")]
+        // public float SkillRTimeout = 0.7f; // attack ended at 42nd frame
+
+        // [Tooltip("Time required to pass before being able to skillL again. Set to 0f to instantly skillL again")]
+        // public float SkillLTimeout = 0.7f; // attack ended at 42nd frame
+
+        // [Tooltip("Time required to pass before being able to item again. Set to 0f to instantly item again")]
+        // public float ItemTimeout = 0.7f; // attack ended at 42nd frame
+
+        // [Tooltip("Time required to pass before being able to sprint again. Set to 0f to instantly sprint again")]
+        // public float SprintTimeout = 0.50f;
+
+        [Tooltip("Time required to pass before being able to camlock again. Set to 0f to instantly camlock again")]
+        public float CamlockTimeout = 0.50f;
+
+        [Tooltip("Time required to pass before being able to interact again. Set to 0f to instantly interact again")]
+        public float InteractTimeout = 0.50f;
+
+        [Tooltip("Time required to pass before being able to switch right again. Set to 0f to instantly switch right again")]
+        public float SwitchRTimeout = 0.50f;
+
+        [Tooltip("Time required to pass before being able to switch left again. Set to 0f to instantly switch left again")]
+        public float SwitchLTimeout = 0.50f;
+
+        [Tooltip("Time required to pass before being able to switch item again. Set to 0f to instantly switch item again")]
+        public float SwitchItemTimeout = 0.50f;
         // ADDNEWACTIONS
 
         [Tooltip("Time required to pass before being able to dodge again. Set to 0f to instantly dodge again")]
@@ -106,15 +137,22 @@ using UnityEngine.InputSystem;
         [SerializeField] private float maxFocus = 125f;
         [SerializeField] private float maxStamina = 100f;
         [SerializeField] private float maxPoise = 51f;
+        [SerializeField] private float stanceStunDuration = 5f;
+        [SerializeField] private float HealAmount = 300f;
 
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
 
         // player
+        private Vector2 _lastMoveInput = Vector2.zero;
+        private bool _attackFollowCamera = false;
         private float _speed;
+        private float _lastSpeed;
         private float _animationBlend;
         private float _targetRotation = 0.0f;
+        private float _lastTargetRotation = 0.0f;
+        private float _attackRotation = 0.0f;
         private float _rotationVelocity;
         private float _verticalVelocity;
         private float _terminalVelocity = 53.0f;
@@ -131,11 +169,12 @@ using UnityEngine.InputSystem;
         private float _jumpTimeoutDelta;
         private float _fallTimeoutDelta;
 
-        //private float _attackTimeoutDelta;
+        private float CurAttackTimeout;
         //private float _dodgeTimeoutDelta;
         private float _invincibleTimeoutDelta;
-
         private float _actionTimeoutDelta;
+        private float _forceLeaveTimeoutDelta = 0.5f;
+        private float _forceEnterTimeoutDelta = 0.1f;
         //private float _globalTimeoutDelta;
         // ADDNEWACTIONS
 
@@ -147,6 +186,7 @@ using UnityEngine.InputSystem;
         private int _animIDMotionSpeed;
 
         // ADDNEWACTIONS
+        private int forceEnter = 0;
         private int nextStateID = 0;
         /*
             0: idle/walk/run blend
@@ -165,6 +205,8 @@ using UnityEngine.InputSystem;
             13: switchItem
         */
 
+        private int _animaIDNextState; // int
+        private int _animIDHealth; // float
         private int _animIDActionLock; // boolean // avoid action go back to idle
 
         private int _animIDInteract; // boolean
@@ -221,14 +263,17 @@ using UnityEngine.InputSystem;
 
         // FUNCTIONAL INPUTS // sprint, interact, item, skill
         private int F_Camlock = 0;
+        private int F_Jump = 0;
         private int F_Attack = 0;
         private int F_Heal = 0;
         private int F_Dodge = 0;
         private bool BT_Camlock = false;
+        private bool BT_Jump = false;
         private bool BT_Attack = false;
         private bool BT_Heal = false;
         private bool BT_Dodge = false;
         private bool RL_Camlock = false;
+        private bool RL_Jump = false;
         private bool RL_Attack = false;
         private bool RL_Heal = false;
         private bool RL_Dodge = false;
@@ -242,6 +287,23 @@ using UnityEngine.InputSystem;
         private bool RL_Item = false;
         private bool RL_SkillL = false;
         private bool RL_SkillR = false;
+
+        // States
+        private string[] dodgeStates = {
+                "OneHand_Up_Roll_F",
+                "OneHand_Up_Roll_F 0"
+            };
+        private string[] healStates = {
+                "Heal",
+                "Heal 0"
+            };
+        private string[] attackStates = {
+                "OneHand_Up_Attack_A_1",
+                "OneHand_Up_Attack_A_2",
+                "OneHand_Up_Attack_A_2 (Dodge)",
+                "OneHand_Up_Attack_A_5 (Run)",
+                "FallAttack"
+            };
 
         private void Awake()
         {
@@ -272,7 +334,7 @@ using UnityEngine.InputSystem;
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
 
-            //_attackTimeoutDelta = AttackTimeout;
+            CurAttackTimeout = AttackTimeout;
             //_dodgeTimeoutDelta = DodgeTimeout;
             _invincibleTimeoutDelta = 0.0f;
             _actionTimeoutDelta = 0.0f;
@@ -319,6 +381,8 @@ using UnityEngine.InputSystem;
             _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
 
             // ADDNEWACTIONS
+            _animaIDNextState = Animator.StringToHash("NextState");
+            _animIDHealth = Animator.StringToHash("Health");
             _animIDActionLock = Animator.StringToHash("ActionLock"); // boolean // avoid action go back to idle
             
             _animIDAttack = Animator.StringToHash("Attack"); // boolean
@@ -383,47 +447,123 @@ using UnityEngine.InputSystem;
         private void Move()
         {
             // set target speed based on move speed, sprint speed and if sprint is pressed
-            float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
+            float targetSpeed = _lastSpeed;
+            if (IsInAnimationStateArray(new string[] { 
+                    "Idle Walk Run Blend",
+                    "JumpStart"
+                }))
+            {
+                _lastMoveInput = _input.move;
+                if (_input.sprint)
+                    targetSpeed = SprintSpeed;
+                else
+                    targetSpeed = MoveSpeed;
+            }
+            else if (IsInAnimationStateArray(healStates))
+            {
+                _lastMoveInput = _input.move;
+                targetSpeed = WalkSpeed;
+            }
+            _lastSpeed = targetSpeed;
+
+            bool movable = IsInAnimationStateArray(new string[] { 
+                    "Idle Walk Run Blend", 
+                    "InAir",
+                    "JumpStart",
+                    "Heal",
+                    "Heal 0",
+                    "FallAttack_InAir"
+                });
+
+            bool rolling = IsInAnimationStateArray(dodgeStates);
+            bool rolling_last = lastInfoIsInAnimationStateArray(dodgeStates);
             //Debug.Log("Target Speed: " + targetSpeed);
 
             // a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
 
             // note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
             // if there is no input, set the target speed to 0
-            if (_input.move == Vector2.zero) targetSpeed = 0.0f;
+            if (_lastMoveInput == Vector2.zero) 
+                targetSpeed = 0.0f;
+            if (!movable && !rolling)
+            {
+                _jumpTimeoutDelta = JumpTimeout;
+                _lastMoveInput = Vector2.zero;
+                targetSpeed = 0.0f;
+                if (_input.move != Vector2.zero && _actionTimeoutDelta <= -_forceLeaveTimeoutDelta)
+                    _animator.SetBool(_animIDActionLock, false);
+            }
 
-            float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
+            // TEMPORARY USELESS
+            float inputMagnitude = _input.analogMovement ? _lastMoveInput.magnitude : 1f;
 
-            // a reference to the players current horizontal velocity
-            GradMove(targetSpeed, inputMagnitude);
+            if (rolling)
+            {
+                targetSpeed = SprintSpeed;
+                _lastMoveInput = _input.move;
+                if (DodgeTimeout - _actionTimeoutDelta <= 0.1f)
+                {
+                    targetSpeed = RollSpeed;
+                }
+                if (_actionTimeoutDelta <= 0.0f)
+                {
+                    targetSpeed = 2.0f;
+                }
+                if (_actionTimeoutDelta <= -_forceLeaveTimeoutDelta + 0.3f)
+                {
+                    targetSpeed = 0.0f;
+                    if (_input.move != Vector2.zero || _actionTimeoutDelta <= -_forceLeaveTimeoutDelta)
+                        _animator.SetBool(_animIDActionLock, false);
+                }
+            }
+
+            // accerelrate or decelerate to target speed
+            GradMove(targetSpeed, 1f);
+            // GradMove(targetSpeed, inputMagnitude);
 
             // ======================================
 
             // normalise input direction
-            Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
+            Vector3 inputDirection = new Vector3(_lastMoveInput.x, 0.0f, _lastMoveInput.y).normalized;
 
             // note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
             // if there is a move input rotate player when the player is moving
-            if (IsInAnimationStateArray(new string[] { "Idle Walk Run Blend", "InAir" }))
+            if ((_lastMoveInput != Vector2.zero && movable) || rolling)
             {
-                if (_input.move != Vector2.zero)
-                {
-                    // Camlook part do seperately (not here)
-                    _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
-                                      _mainCamera.transform.eulerAngles.y;
-                    float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
-                        RotationSmoothTime);
+                // Camlook part do seperately (not here)
+                if (!rolling || (rolling && rolling_last && currentInfo != lastInfo))
+                    _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + 
+                                        _mainCamera.transform.eulerAngles.y;
 
-                    // rotate to face input direction relative to camera position
-                    transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
-                }
+                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
+                    RotationSmoothTime);
 
-                Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
-
-                // move the player
-                _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
-                                 new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+                // rotate to face input direction relative to camera position
+                transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
             }
+            else if (_attackFollowCamera)
+            {
+                // Camlook part do seperately (not here)
+                _targetRotation = _attackRotation;
+
+                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
+                    RotationSmoothTime);
+
+                // rotate to face input direction relative to camera position
+                transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
+
+                if (Mathf.Abs(Mathf.DeltaAngle(transform.eulerAngles.y, _attackRotation)) < 0.1f)
+                {
+                    _attackFollowCamera = false;
+                }
+            }
+
+            Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
+
+            // move the player
+            if (movable || rolling)
+                _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
+                                    new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
 
             // ======================================
 
@@ -449,7 +589,11 @@ using UnityEngine.InputSystem;
             RL_Camlock = F_Camlock > 0 ? !_input.camlock : false;
             BT_Camlock = F_Camlock == 0 ? _input.camlock : false;
             F_Camlock = _input.camlock ? F_Camlock + 1 : 0;
-            // jump (given)
+
+            RL_Jump = F_Jump > 0 ? !_input.jump : false;
+            BT_Jump = F_Jump == 0 ? _input.jump : false;
+            F_Jump = _input.jump ? F_Jump + 1 : 0;
+
             RL_Attack = F_Attack > 0 ? !_input.attack : false;
             BT_Attack = F_Attack == 0 ? _input.attack : false;
             F_Attack = _input.attack ? F_Attack + 1 : 0;
@@ -485,11 +629,17 @@ using UnityEngine.InputSystem;
 
             stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
             currentInfo = stateInfo.shortNameHash;
+
+            if (currentInfo != lastInfo)
+            {
+                _animator.SetInteger(_animaIDNextState, 0);
+            }
             
-            if (_actionTimeoutDelta >= 0.0f && Grounded)
+            if (_actionTimeoutDelta >= -_forceLeaveTimeoutDelta && Grounded)
             {
                 _actionTimeoutDelta -= Time.deltaTime;
-                _animator.SetBool(_animIDActionLock, true);
+                if (_actionTimeoutDelta >= 0.0f && currentHealth >= 0.0f)
+                    _animator.SetBool(_animIDActionLock, true);
             }
 
             if (_invincibleTimeoutDelta >= 0.0f)
@@ -497,12 +647,17 @@ using UnityEngine.InputSystem;
                 _invincibleTimeoutDelta -= Time.deltaTime;
             }
 
+            // if (_forceEnterTimeoutDelta >= 0.0f)
+            // {
+            //     _forceEnterTimeoutDelta -= Time.deltaTime;
+            // }
+            
             bool[] inputState = {
                 false,
                 RL_Dodge,
                 RL_Heal,
                 RL_Attack,
-                _input.jump,
+                RL_Jump,
                 _input.skillR || RL_SkillR,
                 _input.skillL || RL_SkillL,
                 _input.item || RL_Item,
@@ -518,7 +673,11 @@ using UnityEngine.InputSystem;
             {
                 if (inputState[i])
                 {
+                    if (i == 4 && !Grounded) continue;
+                    if (i == 2 && currentHealth >= maxHealth) continue;
+
                     nextStateID = i;
+                    _animator.SetInteger(_animaIDNextState, nextStateID);
                     if (nextStateID != 1 && nextStateID != 2 && nextStateID != 4) break;
                     if (Grounded) break;
                 }
@@ -542,7 +701,6 @@ using UnityEngine.InputSystem;
                 // update animator if using character
                 if (_hasAnimator)
                 {
-                    _animator.SetBool(_animIDActionLock, true);
                     _animator.SetBool(_animIDJump, false);
                     _animator.SetBool(_animIDFreeFall, false);
                 }
@@ -550,20 +708,24 @@ using UnityEngine.InputSystem;
                 // stop our velocity dropping infinitely when grounded
                 if (_verticalVelocity < 0.0f)
                 {
-                    _verticalVelocity = -2f;
+                    _verticalVelocity = -3f;
                 }
 
                 // Jump
-                if (_input.jump && _jumpTimeoutDelta <= 0.0f)
+                if (nextStateID == 4 && _jumpTimeoutDelta <= 0.0f && IsInAnimationStateArray(new string[] { 
+                    "Idle Walk Run Blend",
+                }))
                 {
                     // the square root of H * -2 * G = how much velocity needed to reach desired height
-                    _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+                    _verticalVelocity = Mathf.Sqrt(JumpHeight * -3f * Gravity);
 
                     // update animator if using character
                     if (_hasAnimator)
                     {
                         _animator.SetBool(_animIDJump, true);
                     }
+
+                    nextStateID = 0;
                 }
 
                 // jump timeout
@@ -592,7 +754,7 @@ using UnityEngine.InputSystem;
                 }
 
                 // if we are not grounded, do not jump
-                _input.jump = false;
+                // _input.jump = false;
             }
 
             // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
@@ -653,11 +815,27 @@ using UnityEngine.InputSystem;
                 _animator.SetBool(_animIDDodgeControl, false);
             }
 
+            // if (forceEnter == 1)
+            // {
+            //     if (IsInAnimationStateArray(new string[] { "Idle Walk Run Blend" }))
+            //     {
+            //         _animator.SetBool(_animIDDodge, true);
+            //         _animator.SetBool(_animIDDodgeControl, false);
+            //         _actionTimeoutDelta = DodgeTimeout;
+            //         nextStateID = 0;
+
+            //         _forceEnterTimeoutDelta = 0.2f;
+            //     }
+            //     else
+            //     {
+            //         forceEnter = 0;
+            //     }
+            // }
+
             if (nextStateID == 1 && _actionTimeoutDelta <= 0.0f && _hasAnimator)
             {
                 // update animator if using character
                 string[] usingDodge = {
-                    "Idle Walk Run Blend",
                     "InAir",
                     "Heal",
                     "Heal 0",
@@ -671,14 +849,17 @@ using UnityEngine.InputSystem;
                 string[] usingDodgeControl = {
                     "OneHand_Up_Roll_F"
                 };
-                if (IsInAnimationStateArray(usingDodge))
+                if ((IsInAnimationStateArray(usingDodge) &&
+                    _actionTimeoutDelta >= -_forceLeaveTimeoutDelta + 0.3f) ||
+                    IsInAnimationStateArray(new string[] { "Idle Walk Run Blend" }))
                 {
                     _animator.SetBool(_animIDDodge, true);
                     _animator.SetBool(_animIDDodgeControl, false);
                     _actionTimeoutDelta = DodgeTimeout;
                     nextStateID = 0;
                 }
-                else if (IsInAnimationStateArray(usingDodgeControl))
+                else if (IsInAnimationStateArray(usingDodgeControl) && 
+                    _actionTimeoutDelta >= -_forceLeaveTimeoutDelta + 0.3f)
                 {
                     _animator.SetBool(_animIDDodge, false);
                     _animator.SetBool(_animIDDodgeControl, true);
@@ -694,10 +875,6 @@ using UnityEngine.InputSystem;
 
         private void Dodge()
         {
-            string[] dodgeStates = {
-                "OneHand_Up_Roll_F",
-                "OneHand_Up_Roll_F 0"
-            };
             if (IsInAnimationStateArray(dodgeStates))
             {
                 if (currentInfo != lastInfo)
@@ -706,14 +883,21 @@ using UnityEngine.InputSystem;
                     _invincibleTimeoutDelta = Dodge_Invincible;
                 }
 
-                float targetSpeed = RollSpeed;
-                GradMove(targetSpeed, 1f);
+                // float targetSpeed = RollSpeed;
+                // if (_actionTimeoutDelta <= 0.0f)
+                // {
+                //     _lastMoveInput = _input.move;
+                //     targetSpeed = 1.0f;
+                // }
+                // if (_actionTimeoutDelta <= -_forceLeaveTimeoutDelta)
+                //     targetSpeed = 0.0f;
+                // GradMove(targetSpeed, 1f);
 
-                Vector3 targetDirection = transform.forward;
+                // Vector3 targetDirection = transform.forward;
 
-                // move the player
-                _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
-                                 new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+                // // move the player
+                // _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
+                //                  new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
 
                 if (_invincibleTimeoutDelta <= 0.0f)
                 {
@@ -732,11 +916,27 @@ using UnityEngine.InputSystem;
                 _animator.SetBool(_animIDHealControl, false);
             }
 
+            // if (forceEnter == 2 && _forceEnterTimeoutDelta <= 0.0f)
+            // {
+            //     if (IsInAnimationStateArray(new string[] { "Idle Walk Run Blend" }))
+            //     {
+            //         _animator.SetBool(_animIDHeal, true);
+            //         _animator.SetBool(_animIDHealControl, false);
+            //         _actionTimeoutDelta = HealTimeout;
+            //         nextStateID = 0;
+
+            //         _forceEnterTimeoutDelta = 0.2f;
+            //     }
+            //     else
+            //     {
+            //         forceEnter = 0;
+            //     }
+            // }
+
             if (nextStateID == 2 && _actionTimeoutDelta <= 0.0f && _hasAnimator && Grounded)
             {
                 // update animator if using character
                 string[] usingHeal = {
-                    "Idle Walk Run Blend",
                     "Heal 0",
                     "OneHand_Up_Roll_F",
                     "OneHand_Up_Roll_F 0"
@@ -744,22 +944,29 @@ using UnityEngine.InputSystem;
                 string[] usingHealControl = {
                     "Heal"
                 };
-                if (IsInAnimationStateArray(usingHeal))
+                if ((IsInAnimationStateArray(usingHeal) &&
+                    _actionTimeoutDelta >= -_forceLeaveTimeoutDelta + 0.3f) ||
+                    IsInAnimationStateArray(new string[] { "Idle Walk Run Blend" }))
                 {
                     _animator.SetBool(_animIDHeal, true);
                     _animator.SetBool(_animIDHealControl, false);
                     _actionTimeoutDelta = HealTimeout;
-                    if (laststateInfo.IsName("Heal 0"))
+                    if (lastInfoIsInAnimationStateArray(healStates))
                     {
                         _actionTimeoutDelta -= 1.00f;
                     }
                     nextStateID = 0;
                 }
-                else if (IsInAnimationStateArray(usingHealControl))
+                else if (IsInAnimationStateArray(usingHealControl) && 
+                    _actionTimeoutDelta >= -_forceLeaveTimeoutDelta + 0.3f)
                 {
                     _animator.SetBool(_animIDHeal, false);
                     _animator.SetBool(_animIDHealControl, true);
-                    _actionTimeoutDelta = HealTimeout - 1.00f;
+                    _actionTimeoutDelta = HealTimeout;
+                    if (lastInfoIsInAnimationStateArray(healStates))
+                    {
+                        _actionTimeoutDelta -= 1.00f;
+                    }
                     nextStateID = 0;
                 }
                 else
@@ -770,7 +977,19 @@ using UnityEngine.InputSystem;
         }
 
         private void Heal()
-        { }
+        {
+            if (IsInAnimationStateArray(healStates))
+            {
+                if (currentInfo != lastInfo)
+                {
+                    // Heal effect here
+                    currentHealth += HealAmount;
+                    if (currentHealth > maxHealth)
+                        currentHealth = maxHealth;
+                    _animator.SetFloat(_animIDHealth, currentHealth);
+                }
+            }
+        }
 
         private void attackAnimation()
         {
@@ -778,13 +997,34 @@ using UnityEngine.InputSystem;
             {
                 _animator.SetBool(_animIDAttack, false);
                 _animator.SetBool(_animIDAttackControl, false);
+                // if (lastInfoIsInAnimationStateArray(new string[] { "Idle Walk Run Blend" }) && 
+                //     IsInAnimationStateArray(new string[] { "Idle Walk Run Blend" }))
+                // {
+                //     _animator.SetBool(_animIDActionLock, false);
+                // }
             }
+
+            // if (forceEnter == 3 && _forceEnterTimeoutDelta <= 0.0f)
+            // {
+            //     if (IsInAnimationStateArray(new string[] { "Idle Walk Run Blend" }))
+            //     {
+            //         _animator.SetBool(_animIDAttack, true);
+            //         _animator.SetBool(_animIDAttackControl, false);
+            //         _actionTimeoutDelta = AttackTimeout;
+            //         nextStateID = 0;
+
+            //         _forceEnterTimeoutDelta = 0.2f;
+            //     }
+            //     else
+            //     {
+            //         forceEnter = 0;
+            //     }
+            // }
 
             if (nextStateID == 3 && _actionTimeoutDelta <= 0.0f && _hasAnimator)
             {
                 // update animator if using character
                 string[] usingAttack = {
-                    "Idle Walk Run Blend",
                     "InAir",
                     "OneHand_Up_Attack_A_2 (Dodge)",
                     "OneHand_Up_Attack_A_2"
@@ -796,25 +1036,30 @@ using UnityEngine.InputSystem;
                     "OneHand_Up_Attack_A_5 (Run)",
                     "FallAttack"
                 };
-                if (IsInAnimationStateArray(usingAttack))
+                if ((IsInAnimationStateArray(usingAttack) &&
+                    _actionTimeoutDelta >= -_forceLeaveTimeoutDelta) ||
+                    IsInAnimationStateArray(new string[] { "Idle Walk Run Blend" }))
                 {
                     _animator.SetBool(_animIDAttack, true);
                     _animator.SetBool(_animIDAttackControl, false);
                     if (IsInAnimationStateArray(new string[] { "InAir" }))
                     {
-                        _actionTimeoutDelta = AirAttackTimeout;
+                        _actionTimeoutDelta = FallAttackTimeout;
                     }
                     else
                     {
                         _actionTimeoutDelta = AttackTimeout;
+                        updateAttackRotation();
                     }
                     nextStateID = 0;
                 }
-                else if (IsInAnimationStateArray(usingAttackControl))
+                else if (IsInAnimationStateArray(usingAttackControl) &&
+                    _actionTimeoutDelta >= -_forceLeaveTimeoutDelta)
                 {
                     _animator.SetBool(_animIDAttack, false);
                     _animator.SetBool(_animIDAttackControl, true);
                     _actionTimeoutDelta = AttackTimeout;
+                    updateAttackRotation();
                     nextStateID = 0;
                 }
                 else
@@ -825,14 +1070,55 @@ using UnityEngine.InputSystem;
         }
 
         private void Attack()
-        { }
+        {
+            if (IsInAnimationStateArray(attackStates))
+            {
+                if (currentInfo != lastInfo)
+                {
+                    currentHealth -= 100f;
+                    _animator.SetFloat(_animIDHealth, currentHealth);
+
+                    CurAttackTimeout = AttackTimeout;
+                    if (IsInAnimationStateArray(new string[] { "FallAttack" }))
+                        CurAttackTimeout = FallAttackTimeout;
+                }
+
+                if (CurAttackTimeout - _actionTimeoutDelta >= 0.1f &&
+                    _actionTimeoutDelta >= 0.1f)
+                {
+                    if (IsInAnimationStateArray(new string[] { "FallAttack" }))
+                    {
+                        ActivateAttack(1); // fall attack
+                    }
+                    else
+                    {
+                        ActivateAttack(0); // base attack
+                    }
+                }
+                else
+                {
+                    DeactivateAllHitboxes();
+                }
+            }
+        }
 
         // HELPER METHODS
+        // move and look
         private bool IsInAnimationStateArray(string[] stateNameArray)
         {
             foreach (string name in stateNameArray)
             {
                 if (stateInfo.IsName(name))
+                    return true;
+            }
+            return false;
+        }
+
+        private bool lastInfoIsInAnimationStateArray(string[] stateNameArray)
+        {
+            foreach (string name in stateNameArray)
+            {
+                if (laststateInfo.IsName(name))
                     return true;
             }
             return false;
@@ -864,6 +1150,13 @@ using UnityEngine.InputSystem;
             }
         }
 
+        private void updateAttackRotation()
+        {
+            _attackFollowCamera = true;
+            _attackRotation = _mainCamera.transform.eulerAngles.y;
+        }
+
+        // combat system
         private void HandleDamage(DamageData damageData)
         {
             if (isInvincible) return;
@@ -872,6 +1165,7 @@ using UnityEngine.InputSystem;
             if (currentHealth >= 0)
             {
                 currentHealth -= damageData.damage;
+                _animator.SetFloat(_animIDHealth, currentHealth);
             }
             if (currentHealth <= 0)
             {
@@ -924,11 +1218,6 @@ using UnityEngine.InputSystem;
                 hitbox.DisableHitbox();
             }
         }
-
-        public Vector3 getAttackDirection()
-        {
-            Vector3 attackDirection = transform.forward.normalized; // temporary
-            return attackDirection;
-        }
     }
-// }
+ 
+// todo: feint, ash of war
