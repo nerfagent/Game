@@ -57,7 +57,7 @@ public abstract class BaseSkill
         isCasting = true;
         castTimer = CastTime;
 
-        onSkillCast.Invoke(skillId);
+        onSkillCast?.Invoke(skillId);
         Debug.Log($"Casting {skillName}. Pool: {CurrentCooldownPool}/{MaxCooldownPool}");
     }
 
@@ -85,7 +85,7 @@ public abstract class BaseSkill
     public virtual void OnCastComplete()
     {
         isCasting = false;
-        SkillSystem.onSkillCastComplete[skillId].Invoke();
+        SkillSystem.onSkillCastComplete[skillId]?.Invoke();
         Debug.Log($"{skillName} cast complete");
     }
 

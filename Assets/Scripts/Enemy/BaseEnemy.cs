@@ -367,7 +367,7 @@ public abstract class BaseEnemy : MonoBehaviour
             EnemyManager.Instance.RecordBossDefeated(uniqueID);
         }
         
-        OnEnemyDefeated.Invoke();
+        OnEnemyDefeated?.Invoke();
 
         Debug.Log($"{gameObject.name} ({uniqueID}) 已被擊敗！狀態已記錄。");
         

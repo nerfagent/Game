@@ -34,7 +34,7 @@ public class GameManager : MonoBehaviour
     public void StartGame()
     {
         CurrentState = GameState.Playing;
-        onGameStart.Invoke();
+        onGameStart?.Invoke();
     }
 
     public void PauseGame()
@@ -54,6 +54,6 @@ public class GameManager : MonoBehaviour
     public void GameOver()
     {
         CurrentState = GameState.GameOver;
-        onGameOver.Invoke();
+        onGameOver?.Invoke();
     }
 }

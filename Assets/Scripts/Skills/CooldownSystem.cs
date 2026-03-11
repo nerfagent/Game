@@ -44,7 +44,7 @@ public class CooldownSystem : MonoBehaviour
         for (int i = 0; i < skills.Length; i++)
         {
             wasSkillReady[i] = skills[i].IsReady;
-            onSkillCooldownUpdated.Invoke(i);
+            onSkillCooldownUpdated?.Invoke(i);
         }
     }
 
@@ -60,16 +60,16 @@ public class CooldownSystem : MonoBehaviour
             // 若技能從「冷卻中」轉為「可用」，觸發事件
             if (!wasReady && isReady)
             {
-                onSkillReady.Invoke(i);
+                onSkillReady?.Invoke(i);
             }
             // 若從「可用」變為「冷卻中」
             else if (wasReady && !isReady)
             {
-                onSkillOnCooldown.Invoke(i);
+                onSkillOnCooldown?.Invoke(i);
             }
 
             wasSkillReady[i] = isReady;
-            onSkillCooldownUpdated.Invoke(i); // 持續同步 UI
+            onSkillCooldownUpdated?.Invoke(i); // 持續同步 UI
         }
     }
 
@@ -152,7 +152,7 @@ public class CooldownSystem : MonoBehaviour
         {
             skills[i].ResetCooldown();
             wasSkillReady[i] = true;
-            onSkillReady.Invoke(i);
+            onSkillReady?.Invoke(i);
         }
         Debug.Log("All skill cooldown pools reset to full");
     }

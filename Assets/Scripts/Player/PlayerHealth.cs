@@ -44,7 +44,7 @@ public class PlayerHealth : MonoBehaviour
         currentHP -= damage;
         currentHP = Mathf.Max(0, currentHP);
         
-        OnPlayerDamaged.Invoke();
+        OnPlayerDamaged?.Invoke();
         
         if (currentHP <= 0)
         {
@@ -57,7 +57,7 @@ public class PlayerHealth : MonoBehaviour
     /// </summary>
     private void Die()
     {
-        OnPlayerDied.Invoke();
+        OnPlayerDied?.Invoke();
         GameManager.Instance.GameOver();
     }
 }

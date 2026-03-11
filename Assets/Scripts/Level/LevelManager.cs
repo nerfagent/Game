@@ -127,8 +127,8 @@ public class LevelManager : MonoBehaviour
         }
 
         // 第 7 步：觸發完成事件
-        SaveLoadManager.onLevelLoaded.Invoke();
-        onLevelLoaded.Invoke(levelName);  // 傳遞關卡名稱
+        SaveLoadManager.onLevelLoaded?.Invoke();
+        onLevelLoaded?.Invoke(levelName);  // 傳遞關卡名稱
 
         isTransitioning = false;
         Debug.Log($"關卡轉移完成: {levelName}");

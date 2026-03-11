@@ -37,7 +37,7 @@ public abstract class InteractiveObject : MonoBehaviour
     {
         persistentState.SetBoolState(stateKey, true);
         OnStateChanged(true);
-        onObjectActivated.Invoke();
+        onObjectActivated?.Invoke();
         Debug.Log($"{gameObject.name} 已啟用");
     }
 
@@ -48,7 +48,7 @@ public abstract class InteractiveObject : MonoBehaviour
     {
         persistentState.SetBoolState(stateKey, false);
         OnStateChanged(false);
-        onObjectDeactivated.Invoke();
+        onObjectDeactivated?.Invoke();
     }
 
     /// <summary>

@@ -111,7 +111,7 @@ public class SaveLoadManager : MonoBehaviour
         currentSaveData = data;
         
         Debug.Log($"遊戲已保存 - 檢查點: {checkpointID}, 場景: {sceneName}, 位置: {spawnPosition}");
-        onGameSaved.Invoke();
+        onGameSaved?.Invoke();
     }
     
     /// <summary>
@@ -268,7 +268,7 @@ public class SaveLoadManager : MonoBehaviour
         }
         
         Debug.Log("存檔數據已完全應用");
-        onGameLoaded.Invoke();
+        onGameLoaded?.Invoke();
     }
     
     /// <summary>

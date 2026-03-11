@@ -87,7 +87,7 @@ public class Checkpoint : MonoBehaviour
         }
         
         // 觸發事件
-        onCheckpointRest.Invoke();
+        onCheckpointRest?.Invoke();
         
         if (showDebugInfo)
         {

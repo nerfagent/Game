@@ -36,7 +36,7 @@ public class PersistentStateManager : MonoBehaviour
     public void SetBoolState(string stateKey, bool value)
     {
         booleanStates[stateKey] = value;
-        onStateChanged.Invoke(stateKey);
+        onStateChanged?.Invoke(stateKey);
         Debug.Log($"State '{stateKey}' set to {value}");
     }
 
@@ -54,7 +54,7 @@ public class PersistentStateManager : MonoBehaviour
     public void SetIntState(string stateKey, int value)
     {
         integerStates[stateKey] = value;
-        onStateChanged.Invoke(stateKey);
+        onStateChanged?.Invoke(stateKey);
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public class PersistentStateManager : MonoBehaviour
             integerStates[stateKey] = 0;
         
         integerStates[stateKey] += increment;
-        onStateChanged.Invoke(stateKey);
+        onStateChanged?.Invoke(stateKey);
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public class PersistentStateManager : MonoBehaviour
     public void SetFloatState(string stateKey, float value)
     {
         floatStates[stateKey] = value;
-        onStateChanged.Invoke(stateKey);
+        onStateChanged?.Invoke(stateKey);
     }
 
     /// <summary>
@@ -100,7 +100,7 @@ public class PersistentStateManager : MonoBehaviour
     public void SetStringState(string stateKey, string value)
     {
         stringStates[stateKey] = value;
-        onStateChanged.Invoke(stateKey);
+        onStateChanged?.Invoke(stateKey);
     }
 
     /// <summary>

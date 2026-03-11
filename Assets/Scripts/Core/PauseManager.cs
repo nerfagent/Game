@@ -73,7 +73,7 @@ public class PauseManager : MonoBehaviour
         
         isPaused = true;
         Time.timeScale = 0f;
-        GameManager.onGamePaused.Invoke();
+        GameManager.onGamePaused?.Invoke();
         Debug.Log("Game paused");
     }
     
@@ -87,7 +87,7 @@ public class PauseManager : MonoBehaviour
         
         isPaused = false;
         Time.timeScale = 1f;
-        GameManager.onGameResumed.Invoke();
+        GameManager.onGameResumed?.Invoke();
         Debug.Log("Game resumed");
     }
 }
