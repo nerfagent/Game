@@ -4,11 +4,9 @@ using System;
 using System.Collections.Generic;
 
 // MSB = MyStateBehaviour
-public class MSB_idle : StateMachineBehaviour
+public class MSB_DG_4 : StateMachineBehaviour
 {
     public PlayerMain_A0 _playerMain;
-    public int lastInfo;
-    public int currentInfo = -1;
 
     public bool debugMode = false;
     // This function is called when the state is entered
@@ -18,8 +16,6 @@ public class MSB_idle : StateMachineBehaviour
         {
             _playerMain = animator.GetComponent<PlayerMain_A0>();
         }
-        lastInfo = currentInfo;
-        currentInfo = stateInfo.shortNameHash;
         // Call the custom function when entering this state
         CustomFunction(animator, stateInfo, layerIndex);
     }
@@ -45,12 +41,12 @@ public class MSB_idle : StateMachineBehaviour
             sfx
         */
         _playerMain._animator.SetBool(_playerMain._playerDecision._animIDGo, false); // reset animation trigger, can be used in Animator to control the character's animation state
-        _playerMain._combatSystem.currentPassiveEffectActive = true; // control passive effect, can be used in UpdatePassiveEffects to handle passive effects that have a duration, like poison or regen
+        // _playerMain._combatSystem.currentPassiveEffectActive = false; // control passive effect, can be used in UpdatePassiveEffects to handle passive effects that have a duration, like poison or regen
         // _playerInput._combatSystem.curKB_getHit %= 2;
         // _playerMain.nextStateID = 0; // set next state ID, can be used in PlayerMain_A0 to trigger certain events in next state
         _playerMain._combatSystem.SetInvincible(false, false, false, false, false, false, false); // set invincibility, can be used in Hurtbox to ignore damage
-        _playerMain._anim_VV = -1f; // reset move and look direction, can be used in PlayerMain_A0 to control the character's movement and rotation
-        _playerMain._combatSystem.DeactivateAllHitboxes();
+        // reset move and look direction, can be used in PlayerMain_A0 to control the character's movement and rotation
+        // _playerMain._combatSystem.DeactivateAllHitboxes(); _playerMain._combatSystem.ActivateAttack(0, 0, 0, 0);
         // vfx
         // sfx
     }
@@ -66,14 +62,12 @@ public class MSB_idle : StateMachineBehaviour
         // bool useLocalLook = false
 
         // Implement any logic that needs to be checked or updated every frame while in this state
-        _playerMain._anim_targetSpeed = _playerMain._input.sprint ? 6.5f : 3.5f;
-        _playerMain._anim_targetSpeed = _playerMain._input.move != Vector2.zero ? _playerMain._anim_targetSpeed : 0f;
-
-        _playerMain._anim_localMovingDirection = _playerMain.GetLocalMoveDirection();
-        _playerMain._anim_globalTargetRotationOfPlayer = 0f;
-        _playerMain._anim_cameraAngleFactor = 1f;
-        _playerMain._anim_useCameraRotation = true;
-        _playerMain._anim_localLookOffset = _playerMain.GetRotateFromInput();
-        _playerMain._anim_useLocalLook = true;
+        _playerMain._anim_targetSpeed = 0f;
+        _playerMain._anim_localMovingDirection = Vector3.forward;
+        _playerMain._anim_globalTargetRotationOfPlayer = _playerMain.GetYaw();
+        _playerMain._anim_cameraAngleFactor = 0f;
+        _playerMain._anim_useCameraRotation = false;
+        _playerMain._anim_localLookOffset = 0f;
+        _playerMain._anim_useLocalLook = false;
     }
 }

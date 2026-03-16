@@ -57,8 +57,8 @@ using UnityEngine.InputSystem;
         public LayerMask GroundLayers;
 
         public float _verticalVelocity = 0f;
-        public const float Gravity = -9.81f;
-        public const float TerminalVelocity = -53f;
+        public float Gravity = -9.81f;
+        public float TerminalVelocity = -53f;
 
         // COMMANDS FROM ANIM
         public bool _anim_flag = false; // general use, can be set to trigger certain events in anim, reset by anim
@@ -70,6 +70,7 @@ using UnityEngine.InputSystem;
         public bool _anim_useCameraRotation = false;
         public float _anim_localLookOffset = 0f;
         public bool _anim_useLocalLook = false;
+        public float _anim_VV = -1f;
 
         public int _anim_commandIndex = 0; // 
 
@@ -199,7 +200,9 @@ using UnityEngine.InputSystem;
                 _anim_cameraAngleFactor, 
                 _anim_useCameraRotation, 
                 _anim_localLookOffset, 
-                _anim_useLocalLook); // set move and look direction, can be used in PlayerMain_A0 to control the character's movement and rotation
+                _anim_useLocalLook,
+                _anim_VV); // set move and look direction, can be used in PlayerMain_A0 to control the character's movement and rotation
+            _combatSystem.UpdatePopVE();
         }
 
         private void LateUpdate()
@@ -275,9 +278,9 @@ using UnityEngine.InputSystem;
             BT_Heal = F_Heal == 0 ? _input.heal : false;
             F_Heal = _input.heal ? F_Heal + 1 : 0;
 
-            RL_Dodge = F_Dodge > 0 ? !_input.dodge : false;
-            BT_Dodge = F_Dodge == 0 ? _input.dodge : false;
-            F_Dodge = _input.dodge ? F_Dodge + 1 : 0;
+            RL_Dodge = F_Dodge > 0 ? !Input.GetKey(KeyCode.LeftControl) : false;
+            BT_Dodge = F_Dodge == 0 ? Input.GetKey(KeyCode.LeftControl) : false;
+            F_Dodge = Input.GetKey(KeyCode.LeftControl) ? F_Dodge + 1 : 0;
 
             // Long
 
@@ -482,7 +485,7 @@ using UnityEngine.InputSystem;
         {
             Vector2 mv = _input.move;
             if (mv.sqrMagnitude < _threshold * _threshold)
-                return 0f;
+                return _anim_localLookOffset;
 
             float yaw = Mathf.Atan2(mv.x, mv.y) * Mathf.Rad2Deg;
             return yaw;
@@ -515,7 +518,8 @@ using UnityEngine.InputSystem;
             float cameraAngleFactor,
             bool useCameraRotation,
             float localLookOffset = 0f,
-            bool useLocalLook = false)
+            bool useLocalLook = false,
+            float VV = -1f)
         {
             // get camera yaw (prefer active Cinemachine target; fall back to cached yaw)
             float cameraYaw = _cinemachineTargetYaw;
@@ -548,7 +552,7 @@ using UnityEngine.InputSystem;
                 worldLookYaw = finalGlobalRotation + localLookOffset;
             }
 
-            MoveAndLook(targetSpeed, worldMovingDirection, worldLookYaw);
+            MoveAndLook(targetSpeed, worldMovingDirection, worldLookYaw, VV);
         }
 
         /// <summary>
@@ -558,7 +562,7 @@ using UnityEngine.InputSystem;
         /// - targetRotationOfPlayer: desired player Y rotation in degrees (world space)
         /// This updates internal animation-driving fields and moves/rotates the CharacterController.
         /// </summary>
-        public void MoveAndLook(float targetSpeed, Vector3 targetMovingDirection, float targetRotationOfPlayer)
+        public void MoveAndLook(float targetSpeed, Vector3 targetMovingDirection, float targetRotationOfPlayer, float VV)
         {
             // Update animation-driving fields
             targetMovingDirection = targetMovingDirection.sqrMagnitude > 0.000001f ? targetMovingDirection.normalized : Vector3.forward;
@@ -572,8 +576,11 @@ using UnityEngine.InputSystem;
                 if (Grounded && _verticalVelocity < 0f)
                 {
                     // small negative to keep the controller grounded
-                    _verticalVelocity = -2f;
+                    _verticalVelocity = -5f;
                 }
+
+                // VV
+                if (VV > -0.1f) _verticalVelocity = VV;
 
                 // apply gravity
                 _verticalVelocity += Gravity * Time.deltaTime;
@@ -607,6 +614,7 @@ using UnityEngine.InputSystem;
                 
                 _animator.SetFloat(_playerDecision._animIDSpeed, targetSpeed);
                 _animator.SetFloat(_playerDecision._animIDMotionSpeed, 1f);
+                _animator.SetFloat(_playerDecision._animIDVV, _verticalVelocity);
             }
         }
     }

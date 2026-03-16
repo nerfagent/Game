@@ -107,6 +107,7 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
         //     // do nth
         // }
         MoveAndLook(_anim_moveSpeed, _anim_moveDirection, _anim_lookRotation);
+        _combatSystem.UpdatePopVE();
     }
 
     private void LateUpdate()

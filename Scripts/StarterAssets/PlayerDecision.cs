@@ -90,6 +90,7 @@ public class PlayerDecision : MonoBehaviour
     public int _animIDNextState;
     public int _animIDSpeed;
     public int _animIDMotionSpeed;
+    public int _animIDVV;
 
     public int _animIDGo;
 
@@ -115,6 +116,7 @@ public class PlayerDecision : MonoBehaviour
 
         _animIDSpeed = Animator.StringToHash("Speed");
         _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
+        _animIDVV = Animator.StringToHash("VV"); // temp ui
 
         _animIDGo = Animator.StringToHash("Go");
     }

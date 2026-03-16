@@ -129,6 +129,7 @@ public class CombatSystem_Player_A0 : MonoBehaviour
         //     };
 
     public List<DamageData> currentPendingDamageDataList = new List<DamageData> { };
+    public List<DamageData> currentPendingVEList = new List<DamageData> { }; // Value Editing
     // private bool canGetHit = true;
 
     private PlayerMain_A0 _playerMain;
@@ -304,6 +305,31 @@ public class CombatSystem_Player_A0 : MonoBehaviour
         // _animator.SetFloat(_animIDPoise, currentPoise);
         // _animator.SetFloat(_animIDStance, currentStance);
         // _playerMain.
+    }
+
+    public void PushVE(DamageData VEdata, float H = 0f, float F = 0f, float S = 0f, float P = 0f, bool doEdit = false)
+    {
+        if (doEdit)
+        {
+            float[] HFSP = { 0f, 0f, 0f, 0f };
+            HFSP[0] = H; HFSP[1] = F; HFSP[2] = S; HFSP[3] = P;
+            for (int i = 0; i < 4; i++ )
+                currentPendingVEList[0].damageTypes[i].Value = HFSP[i];
+        }
+        currentPendingVEList.Add(VEdata);
+    }
+
+    public void UpdatePopVE()
+    {
+        if (currentPendingVEList.Count == 0) return;
+
+        float[] HFSP = { 0f, 0f, 0f, 0f }; 
+        for (int i = 0; i < 4; i++ )
+            HFSP[i] = currentPendingVEList[0].damageTypes[i].Value;
+        currentPendingVEList.RemoveAt(0);
+
+        if (currentHealth <= 0f) return; // died
+        ValueEditing(HFSP[0], HFSP[1], HFSP[2], HFSP[3]);
     }
 
     public void SetInvincible(bool hb_head, bool hb_body, bool hb_stomach, bool hb_arms, bool hb_legs, bool hb_wkpt, bool hb_spec)
