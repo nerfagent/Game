@@ -66,7 +66,8 @@ public class Hurtbox : MonoBehaviour
     void Awake()
     {
         collider = GetComponent<Collider>();
-        collider.isTrigger = true;
+        collider.isTrigger = false;
+        collider.enabled = true;
     }
     
     public void ReceiveDamage(DamageData damageData)
@@ -122,10 +123,10 @@ public class Hurtbox : MonoBehaviour
     {
         if (!damageData.selfAttack && owner == damageData.owner) return false;
         if (!damageData.themAttack && owner != damageData.owner) return false;
-        if (!(
+        if (
             (damageData.playerAttack && isPlayer)   || 
             (damageData.npcAttack && isNPC)         || 
-            (damageData.enemyAttack && isEnemy)))   return false;
+            (damageData.enemyAttack && isEnemy))   return false;
 
         if (invincible) return false;
 

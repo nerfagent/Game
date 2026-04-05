@@ -37,7 +37,9 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
     public Vector3 _anim_moveDirection = Vector3.forward;
     public float _anim_lookRotation = 0f;
     public float _anim_VV = -1f;
-    
+    public bool _anim_agentStop = true;
+    public float _anim_agentSpeed = 0f;
+
     public int _anim_enemySkillIndex = 0; // can be used to trigger certain enemy skill in anim, reset by anim
 
     // FUNCTIONAL INPUTS // sprint, interact, item, skill
@@ -114,7 +116,8 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
         // {
         //     // do nth
         // }
-        MoveAndLook(_anim_moveSpeed, _anim_moveDirection, _anim_lookRotation, _anim_VV);
+        MoveAndLook(_anim_moveSpeed, GetGlobalMovingDirection(_anim_moveDirection, _anim_lookRotation), _anim_lookRotation, _anim_VV);
+        NavLogic();
         _combatSystem.UpdatePopVE();
     }
 
@@ -323,5 +326,14 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
             // _animator.SetFloat(_enemyDecision._animIDSpeed, targetSpeed);
             _animator.SetFloat(_enemyDecision._animIDMotionSpeed, 1f);
         }
+    }
+
+    // ============================
+    public void NavLogic()
+    {
+        if (_enemyDecision.m_Agent == null || _enemyDecision.Target == null) return;
+        _enemyDecision.m_Agent.isStopped = _anim_agentStop;
+        if (_anim_agentStop == false) _enemyDecision.m_Agent.destination = _enemyDecision.Target.position;
+        _enemyDecision.m_Agent.speed = _anim_agentSpeed;  
     }
 }

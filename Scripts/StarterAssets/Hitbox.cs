@@ -101,8 +101,8 @@ public class Hitbox : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if ((hitLayers.value & (1 << other.gameObject.layer)) == 0)
-            return;
+        // if ((hitLayers.value & (1 << other.gameObject.layer)) == 0)
+        //     return;
         
         // Find Character component
         Sprite_A0 targetCharacter = other.GetComponentInParent<Sprite_A0>();

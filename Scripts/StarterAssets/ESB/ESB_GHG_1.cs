@@ -56,12 +56,8 @@ public class ESB_GHG_1 : StateMachineBehaviour
             _playerMain._anim_enemySkillIndex = 0;
             _playerMain._enemyDecision.curNextSkill = 0;
         _playerMain._combatSystem.SetInvincible(hb_head, hb_body, hb_stomach, hb_arms, hb_legs, hb_wkpt, hb_spec); // set invincibility, can be used in Hurtbox to ignore damage
-            if (_playerMain._enemyDecision.m_Agent != null)
-            {
-                _playerMain._enemyDecision.m_Agent.isStopped = true;
-                _playerMain._enemyDecision.m_Agent.destination = _playerMain._enemyDecision.Target.position;
-                _playerMain._enemyDecision.m_Agent.speed = 0f;
-            }
+            _playerMain._anim_agentStop = true;
+            _playerMain._anim_agentSpeed = 0f;
             _playerMain._anim_VV = -1f; // reset move and look direction, can be used in PlayerMain_A0 to control the character's movement and rotation
             _playerMain._animator.SetFloat(_playerMain._enemyDecision._animIDSpeed, 0f);
         _playerMain._combatSystem.DeactivateAllHitboxes();
