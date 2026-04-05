@@ -171,6 +171,7 @@ using UnityEngine.InputSystem;
             if (_combatSystem.isReady)
             {
                 _combatSystem.CurrentStatus();
+                _combatSystem.UpdatePassiveEffects();
                 _combatSystem.UpdateHandleDamage();
                 _combatSystem.UpdateHandleReward();
                 nextStateID = _combatSystem.curKB_getHit > 1 ? 14 : nextStateID;
@@ -183,10 +184,16 @@ using UnityEngine.InputSystem;
             /*
                 order from anim:
 
+                clear anim flag
+                control passive effect
+                clear get hit trigger
                 clear input
-                set invinci
-                move & look
+                set invincible
+                move & look (sometimes in update) (include jump)
                 hitbox
+                value editing
+                call other functions
+
                 vfx
                 sfx
             */
@@ -278,9 +285,9 @@ using UnityEngine.InputSystem;
             BT_Heal = F_Heal == 0 ? _input.heal : false;
             F_Heal = _input.heal ? F_Heal + 1 : 0;
 
-            RL_Dodge = F_Dodge > 0 ? !Input.GetKey(KeyCode.LeftControl) : false;
-            BT_Dodge = F_Dodge == 0 ? Input.GetKey(KeyCode.LeftControl) : false;
-            F_Dodge = Input.GetKey(KeyCode.LeftControl) ? F_Dodge + 1 : 0;
+            RL_Dodge = F_Dodge > 0 ? !_input.dodge : false;
+            BT_Dodge = F_Dodge == 0 ? _input.dodge : false;
+            F_Dodge = _input.dodge ? F_Dodge + 1 : 0;
 
             // Long
 

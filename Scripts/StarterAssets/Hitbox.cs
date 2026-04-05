@@ -25,6 +25,8 @@ public class Hitbox : MonoBehaviour
     
     private Collider hitboxCollider;
     private HashSet<Sprite_A0> hitCharacters = new HashSet<Sprite_A0>(); // Alternative: track by Character
+
+    public readonly object _rewardLock = new object();
     public List<DamageData> currentPendingRewardList = new List<DamageData> { };
     
     void Awake()
@@ -116,7 +118,10 @@ public class Hitbox : MonoBehaviour
         {
             hurtbox.ReceiveDamage(summedData);
             hitCharacters.Add(targetCharacter); // Mark character as hit
-            currentPendingRewardList.Add(summedData); // Reward for player, can be used in other scripts like PlayerMain_A0
+            lock (_rewardLock)
+            {
+                currentPendingRewardList.Add(summedData); // Reward for player, can be used in other scripts like PlayerMain_A0
+            }
         }
     }
 

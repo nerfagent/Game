@@ -36,6 +36,7 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
     public float _anim_moveSpeed = 0f;
     public Vector3 _anim_moveDirection = Vector3.forward;
     public float _anim_lookRotation = 0f;
+    public float _anim_VV = -1f;
     
     public int _anim_enemySkillIndex = 0; // can be used to trigger certain enemy skill in anim, reset by anim
 
@@ -83,6 +84,7 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
         if (_combatSystem.isReady)
         {
             _combatSystem.CurrentStatus();
+            _combatSystem.UpdatePassiveEffects();
             _combatSystem.UpdateHandleDamage();
             _combatSystem.UpdateHandleReward();
             nextStateID = _combatSystem.curKB_getHit > 1 ? 14 : nextStateID;
@@ -95,10 +97,16 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
         /*
             order from anim:
 
+            clear anim flag
+            control passive effect
+            clear get hit trigger
             clear input
-            set invinci
-            move & look
+            set invincible
+            move & look (sometimes in update) (include jump)
             hitbox
+            value editing
+            call other functions
+
             vfx
             sfx
         */
@@ -106,7 +114,7 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
         // {
         //     // do nth
         // }
-        MoveAndLook(_anim_moveSpeed, _anim_moveDirection, _anim_lookRotation);
+        MoveAndLook(_anim_moveSpeed, _anim_moveDirection, _anim_lookRotation, _anim_VV);
         _combatSystem.UpdatePopVE();
     }
 
@@ -204,6 +212,50 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
         return finalGlobalRotation;
     }
 
+    /// <summary>
+    /// Returns the yaw (Y rotation in degrees) the player should have to face the given target Transform.
+    /// If target is null or too close, returns the current player yaw.
+    /// </summary>
+    public float GetRotationToFace(Transform target)
+    {
+        if (target == null) return GetYaw();
+
+        Vector3 toTarget = target.position - transform.position;
+        toTarget.y = 0f;
+
+        if (toTarget.sqrMagnitude < 1e-6f) return GetYaw();
+
+        // atan2(x, z) because Unity's forward is +Z
+        return Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
+    }
+
+    public Vector3 GetGlobalMovingDirection(Vector3 localMovingDirection, float rotationDegrees)
+    {
+        // project to XZ and bail out on near-zero input
+        Vector3 localFlat = Vector3.ProjectOnPlane(localMovingDirection, Vector3.up);
+
+        // build yaw rotation from provided float
+        Quaternion yawRot = Quaternion.Euler(0f, rotationDegrees, 0f);
+
+        if (localFlat.sqrMagnitude < 1e-6f)
+        {
+            // fallback: use forward of provided yaw
+            Vector3 forward = yawRot * Vector3.forward;
+            forward.y = 0f;
+            return forward.normalized;
+        }
+
+        Vector3 worldDir = yawRot * localFlat;
+        worldDir.y = 0f;
+        return worldDir.normalized;
+    }
+
+    // Backwards-compatible overload that uses the current transform yaw
+    public Vector3 GetGlobalMovingDirection(Vector3 localMovingDirection)
+    {
+        return GetGlobalMovingDirection(localMovingDirection, GetYaw());
+    }
+
     public float GetYaw()
     {
         return transform.rotation.eulerAngles.y;
@@ -218,7 +270,7 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
     /// - targetRotationOfPlayer: desired player Y rotation in degrees (world space)
     /// This updates internal animation-driving fields and moves/rotates the CharacterController.
     /// </summary>
-    public void MoveAndLook(float targetSpeed, Vector3 targetMovingDirection, float targetRotationOfPlayer)
+    public void MoveAndLook(float targetSpeed, Vector3 targetMovingDirection, float targetRotationOfPlayer, float VV = -1f)
     {
         // Update animation-driving fields
         targetMovingDirection = targetMovingDirection.sqrMagnitude > 0.000001f ? targetMovingDirection.normalized : Vector3.forward;
@@ -232,8 +284,11 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
             if (Grounded && _verticalVelocity < 0f)
             {
                 // small negative to keep the controller grounded
-                _verticalVelocity = -2f;
+                _verticalVelocity = -5f;
             }
+
+            // VV
+            if (VV > -0.1f) _verticalVelocity = VV;
 
             // apply gravity
             _verticalVelocity += Gravity * Time.deltaTime;
@@ -265,7 +320,7 @@ public class SkeletonSwordMain_A0 : MonoBehaviour
         //     // _animator.SetFloat("MoveZ", _anim_moveDirection.z);
         //     // _animator.SetFloat("LookRotation", _anim_lookRotation);
 
-            _animator.SetFloat(_enemyDecision._animIDSpeed, targetSpeed);
+            // _animator.SetFloat(_enemyDecision._animIDSpeed, targetSpeed);
             _animator.SetFloat(_enemyDecision._animIDMotionSpeed, 1f);
         }
     }

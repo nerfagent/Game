@@ -62,8 +62,12 @@ public class SkeletonSwordDecision : MonoBehaviour
     public int _animIDGrounded;
     public int _animIDNextSkill;
     public int _animIDNextState;
+    public int _animIDDeath;
+    public int _animIDActionLock;
+
     public int _animIDSpeed;
     public int _animIDMotionSpeed;
+    public int _animIDVV;
 
     public int _animIDGo;
 
@@ -94,9 +98,12 @@ public class SkeletonSwordDecision : MonoBehaviour
         _animIDGrounded = Animator.StringToHash("Grounded");
         _animIDNextSkill = Animator.StringToHash("NextSkill");
         _animIDNextState = Animator.StringToHash("NextState");
+        _animIDDeath = Animator.StringToHash("Death");
+        _animIDActionLock = Animator.StringToHash("ActionLock");
 
         _animIDSpeed = Animator.StringToHash("Speed");
         _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
+        _animIDVV = Animator.StringToHash("VV"); // temp ui
 
         _animIDGo = Animator.StringToHash("Go");
 
@@ -109,7 +116,7 @@ public class SkeletonSwordDecision : MonoBehaviour
         if (debugMode) Debug.Log("Deciding next action based on current state and inputs.");
 
         // Hunt behaviour
-        m_Distance = Vector3.Distance(m_Agent.transform.position, Target.position);
+        m_Distance = Vector3.Distance(transform.position, Target.position);
         UpdateChaseState();
         
         // Attack behaviour

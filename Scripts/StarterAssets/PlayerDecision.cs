@@ -88,6 +88,8 @@ public class PlayerDecision : MonoBehaviour
     public int _animIDGrounded;
     public int _animIDNextSkill;
     public int _animIDNextState;
+    public int _animIDDeath;
+    
     public int _animIDSpeed;
     public int _animIDMotionSpeed;
     public int _animIDVV;
@@ -113,6 +115,7 @@ public class PlayerDecision : MonoBehaviour
         _animIDGrounded = Animator.StringToHash("Grounded");
         _animIDNextSkill = Animator.StringToHash("NextSkill");
         _animIDNextState = Animator.StringToHash("NextState");
+        _animIDDeath = Animator.StringToHash("Death");
 
         _animIDSpeed = Animator.StringToHash("Speed");
         _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");

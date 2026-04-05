@@ -70,6 +70,16 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
     /*
         0. idle
     */
+    [SerializeField] public DamageData[] VEDatas;
+    /*
+        0. heal
+        1. buff
+        2. BA stamina
+        3. RA stamina
+        4. JA stamina
+        5. DG stamina
+        6. Jump stamina
+    */
 
     // [SerializeField] private DamageData weaponData;
     // [SerializeField] private DamageData weaponBuffData;
@@ -128,7 +138,9 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
         //         "GetHit_D2"
         //     };
 
+    private readonly object _damageLock = new object();
     public List<DamageData> currentPendingDamageDataList = new List<DamageData> { };
+    private readonly object _veLock = new object();
     public List<DamageData> currentPendingVEList = new List<DamageData> { }; // Value Editing
     // private bool canGetHit = true;
 
@@ -145,7 +157,7 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
         {
             currentDizzyDamageLevel[i] = baseDizzyDamageLevel[i];
         }
-        for (int i = 0; i < currentWeaknesses.Length; i++ )
+        for (int i = 0; i < currentWeaknesses.Length && weaknessDatas.Length > 0; i++ )
         {
             currentWeaknesses[i] = weaknessDatas[0].specialWeaknesses[i].Value > 1.1f ? true : false;
         }
@@ -164,7 +176,10 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
     {
         // if (canGetHit)
         // {
+        lock (_damageLock)
+        {
             currentPendingDamageDataList.Add(damageData);
+        }
         //     canGetHit = false;
         // }
     }
@@ -175,89 +190,92 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
         curKB_getHitTimeout = curKB_getHitTimeout <= 0f ? -0.1f : curKB_getHitTimeout;
         if (curKB_getHitTimeout <= 0f && curKB_getHit == 1) curKB_getHit = 0;
 
-        if (currentPendingDamageDataList.Count == 0) return;
-
-        DamageData damageData = currentPendingDamageDataList[0];
-        currentPendingDamageDataList.RemoveAt(0);
-
-        // main part
-        // Debug.Log("Hitted " + currentHealth);
-        float H = 0f, F = 0f, S1 = 0f, P = 0f, temp_multiplier = 1f;
-        // Health reduction
-        if (currentHealth >= 0)
+        lock (_damageLock)
         {
-            for (int i = 0; i < currentWeaknesses.Length && weaknessDatas.Length > 0; i++ )
+            if (currentPendingDamageDataList.Count == 0) return;
+
+            DamageData damageData = currentPendingDamageDataList[0];
+            currentPendingDamageDataList.RemoveAt(0);
+
+            // main part
+            // Debug.Log("Hitted " + currentHealth);
+            float H = 0f, F = 0f, S1 = 0f, P = 0f, temp_multiplier = 1f;
+            // Health reduction
+            if (currentHealth >= 0)
             {
-                temp_multiplier *= currentWeaknesses[i] ? damageData.specialWeaknesses[i].Value : 1f;              
+                for (int i = 0; i < currentWeaknesses.Length; i++ )
+                {
+                    temp_multiplier *= currentWeaknesses[i] ? damageData.specialWeaknesses[i].Value : 1f;              
+                }
+
+                for (int i = 0; i < damageData.damageTypes.Count; i++ )
+                {
+
+                    H -= damageData.damageTypes[i].Value;
+                    P -= damageData.poiseDamageTypes[i].Value;
+                    // S2 -= damageData.poiseDamageTypes[i].Value;
+                }
+                ValueEditing(H * temp_multiplier, F, S1, P * temp_multiplier);
+            }
+            // if (currentHealth <= 0)
+            // {
+            //     Die();
+            //     return;
+            // }
+            // HandlePoiseBreak(damageData);
+
+            curKB_dir = damageData.knockbackDirection;
+            curKB_index = damageData.damageLevel >= 3 ? damageData.damageLevel + 1 : damageData.knockbackindex;
+
+            // Logic for handling poise break effects
+            // if (damageData.damageLevel == 0) return; // shake
+            // if (!currentDizzyDamageLevel[damageData.damageLevel]) return; // shake
+            if (currentPoise <= 0f || currentHealth <= 0f) // knock
+            {
+                switch (damageData.damageLevel)
+                {
+                    case 1:
+                    case 2:
+                        curKB_getHitType = 2 * curKB_index - 3 + 2;
+                        break;
+                    case 3:
+                        curKB_getHitType = 9;
+                        break;
+                    case 4:
+                        curKB_getHitType = 11;
+                        break;
+                }
+                curKB_getHit = curKB_getHit < 2 ? 2 : curKB_getHit;
+                ValueEditing(0f, 0f, 0f, maxPoise); // reset poise after poise break
+            }
+            else if (forceDizzyDamageLevel[damageData.damageLevel]) // || temp_multiplier > 1.1f) // knock
+            {
+                switch (damageData.damageLevel)
+                {
+                    case 1:
+                    case 2:
+                        curKB_getHitType = 2 * curKB_index - 3 + damageData.damageLevel;
+                        break;
+                    case 3:
+                        curKB_getHitType = 8;
+                        break;
+                    case 4:
+                        curKB_getHitType = 10;
+                        break;
+                }
+                curKB_getHit = curKB_getHit < 2 ? 2 : curKB_getHit;
+            }
+            else
+            {
+                curKB_getHitTimeout = 1f;
+                curKB_getHit = curKB_getHit < 2 ? 1 : curKB_getHit;
             }
 
-            for (int i = 0; i < damageData.damageTypes.Count; i++ )
+            if (_playerMain._enemyDecision.applyQLearning)
             {
-
-                H -= damageData.damageTypes[i].Value;
-                P -= damageData.poiseDamageTypes[i].Value;
-                // S2 -= damageData.poiseDamageTypes[i].Value;
+                // can be called in animation event to add reward for player, like heal or stamina regen, based on the damageData and current state
+                _playerMain._enemyDecision.PlayerHittedEnemy();
             }
-            ValueEditing(H * temp_multiplier, F, S1, P * temp_multiplier);
-        }
-        // if (currentHealth <= 0)
-        // {
-        //     Die();
-        //     return;
-        // }
-        // HandlePoiseBreak(damageData);
-
-        curKB_dir = damageData.knockbackDirection;
-        curKB_index = damageData.damageLevel >= 3 ? damageData.damageLevel + 1 : damageData.knockbackindex;
-
-        // Logic for handling poise break effects
-        // if (damageData.damageLevel == 0) return; // shake
-        // if (!currentDizzyDamageLevel[damageData.damageLevel]) return; // shake
-        if (currentPoise <= 0f || currentHealth <= 0f) // knock
-        {
-            switch (damageData.damageLevel)
-            {
-                case 1:
-                case 2:
-                    curKB_getHitType = 2 * curKB_index - 3 + 2;
-                    break;
-                case 3:
-                    curKB_getHitType = 9;
-                    break;
-                case 4:
-                    curKB_getHitType = 11;
-                    break;
-            }
-            curKB_getHit = curKB_getHit < 2 ? 2 : curKB_getHit;
-            ValueEditing(0f, 0f, 0f, maxPoise); // reset poise after poise break
-        }
-        else if (forceDizzyDamageLevel[damageData.damageLevel]) // || temp_multiplier > 1.1f) // knock
-        {
-            switch (damageData.damageLevel)
-            {
-                case 1:
-                case 2:
-                    curKB_getHitType = 2 * curKB_index - 3 + damageData.damageLevel;
-                    break;
-                case 3:
-                    curKB_getHitType = 8;
-                    break;
-                case 4:
-                    curKB_getHitType = 10;
-                    break;
-            }
-            curKB_getHit = curKB_getHit < 2 ? 2 : curKB_getHit;
-        }
-        else
-        {
-            curKB_getHitTimeout = 1f;
-            curKB_getHit = curKB_getHit < 2 ? 1 : curKB_getHit;
-        }
-
-        if (_playerMain._enemyDecision.applyQLearning)
-        {
-            // can be called in animation event to add reward for player, like heal or stamina regen, based on the damageData and current state
-            _playerMain._enemyDecision.PlayerHittedEnemy();
         }
     }
 
@@ -265,17 +283,20 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
     {
         for (int i = 0; i < hitboxes.Length; i++)
         {
-            if (hitboxes[i].currentPendingRewardList.Count == 0) continue;
-            // DamageData damageData = hitboxes[i].currentPendingRewardList[0];
-            // todo: q learning
-            if (_playerMain._enemyDecision.applyQLearning)
+            lock (hitboxes[i]._rewardLock)
             {
-                // can be called in animation event to add reward for player, like heal or stamina regen, based on the damageData and current state
-                _playerMain._enemyDecision.EnemyHittedPlayer();
-            }
-            // ValueEditing(0f, 0f, 0f, 5f); // can edit to add reward for player here, like heal or stamina regen
+                if (hitboxes[i].currentPendingRewardList.Count == 0) continue;
+                // DamageData damageData = hitboxes[i].currentPendingRewardList[0];
+                // todo: q learning
+                if (_playerMain._enemyDecision.applyQLearning)
+                {
+                    // can be called in animation event to add reward for player, like heal or stamina regen, based on the damageData and current state
+                    _playerMain._enemyDecision.EnemyHittedPlayer();
+                }
+                // ValueEditing(0f, 0f, 0f, 5f); // can edit to add reward for player here, like heal or stamina regen
 
-            hitboxes[i].currentPendingRewardList.RemoveAt(0);
+                hitboxes[i].currentPendingRewardList.RemoveAt(0);
+            }
         }
     }
 
@@ -293,7 +314,7 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
         // currentStance += S2;
 
         if (currentHealth <= 0f)
-            currentHealth = -0.1f;
+            currentHealth = -1000f;
         if (currentFocus <= 0f)
             currentFocus = 0f;
         // if (currentStamina <= 0f)
@@ -322,27 +343,33 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
 
     public void PushVE(DamageData VEdata, float H = 0f, float F = 0f, float S = 0f, float P = 0f, bool doEdit = false)
     {
-        if (doEdit)
+        lock (_veLock)
         {
-            float[] HFSP = { 0f, 0f, 0f, 0f };
-            HFSP[0] = H; HFSP[1] = F; HFSP[2] = S; HFSP[3] = P;
-            for (int i = 0; i < 4; i++ )
-                currentPendingVEList[0].damageTypes[i].Value = HFSP[i];
+            if (doEdit)
+            {
+                float[] HFSP = { 0f, 0f, 0f, 0f };
+                HFSP[0] = H; HFSP[1] = F; HFSP[2] = S; HFSP[3] = P;
+                for (int i = 0; i < 4; i++ )
+                    currentPendingVEList[0].damageTypes[i].Value = HFSP[i];
+            }
+            currentPendingVEList.Add(VEdata);
         }
-        currentPendingVEList.Add(VEdata);
     }
 
     public void UpdatePopVE()
     {
-        if (currentPendingVEList.Count == 0) return;
+        lock (_veLock)
+        {
+            if (currentPendingVEList.Count == 0) return;
 
-        float[] HFSP = { 0f, 0f, 0f, 0f }; 
-        for (int i = 0; i < 4; i++ )
-            HFSP[i] = currentPendingVEList[0].damageTypes[i].Value;
-        currentPendingVEList.RemoveAt(0);
+            float[] HFSP = { 0f, 0f, 0f, 0f }; 
+            for (int i = 0; i < 4; i++ )
+                HFSP[i] = currentPendingVEList[0].damageTypes[i].Value;
+            currentPendingVEList.RemoveAt(0);
 
-        if (currentHealth <= 0f) return; // died
-        ValueEditing(HFSP[0], HFSP[1], HFSP[2], HFSP[3]);
+            if (currentHealth <= 0f) return; // died
+            ValueEditing(HFSP[0], HFSP[1], HFSP[2], HFSP[3]);
+        }
     }
 
     public void SetInvincible(bool hb_head, bool hb_body, bool hb_stomach, bool hb_arms, bool hb_legs, bool hb_wkpt, bool hb_spec)
@@ -376,6 +403,14 @@ public class CombatSystem_Skeleton_A0 : MonoBehaviour
                     hurtbox.invincible = false;
                     break;
             }
+        }
+    }
+
+    public void SetWeakness(bool weaknessStatus, int weaknessIndex)
+    {
+        if (weaknessIndex >= 0 && weaknessIndex < currentWeaknesses.Length)
+        {
+            currentWeaknesses[weaknessIndex] = weaknessStatus;
         }
     }
 
