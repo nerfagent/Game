@@ -1,5 +1,7 @@
 # README
 
+Have moved to Unity Version Control since late Jan this year.
+
 ## 目錄結構
 
 為了保持專案清晰且易於擴展，採用以下資料夾分類：
